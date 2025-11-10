@@ -79,65 +79,7 @@ void TestCubeMap::CreateBuffer()
 
 void TestCubeMap::CreateRenderPass()
 {
-	VkAttachmentDescription attachmentDescriptions[2] = {
-		{
-			.format = VulkanBase::Base().SwapchainCi().imageFormat,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-		},
-		{
-			.format = VK_FORMAT_D24_UNORM_S8_UINT,
-			.samples = VK_SAMPLE_COUNT_1_BIT,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.stencilStoreOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-		}
-	};
-
-	VkAttachmentReference attachmentReferences[2] = {
-		{
-			.attachment = 0,
-			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		},
-		{
-			.attachment = 1,
-			.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-		}
-	};
-
-	VkSubpassDescription subpassDescription = {
-		.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-		.colorAttachmentCount = 1,
-		.pColorAttachments = attachmentReferences,
-		.pDepthStencilAttachment = attachmentReferences + 1
-	};
-
-	VkSubpassDependency subpassDependency = {
-		.srcSubpass = VK_SUBPASS_EXTERNAL,
-		.dstSubpass = 0,
-		.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-		.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-		.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-		.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-		.dependencyFlags = VK_DEPENDENCY_BY_REGION_BIT
-	};
-
-	VkRenderPassCreateInfo renderPassCreateInfo = {
-		.attachmentCount = 2,
-		.pAttachments = attachmentDescriptions,
-		.subpassCount = 1,
-		.pSubpasses = &subpassDescription,
-		.dependencyCount = 1,
-		.pDependencies = &subpassDependency
-	};
-
-	renderpass_id = VulkanPlus::Plus().CreateRenderPass("test-cubemap-renderpass", renderPassCreateInfo).first;
+	
 
 }
 
@@ -188,7 +130,7 @@ void TestCubeMap::CreatePipeline()
 		PipelineConfigurator configurator;
 
 		PipelineLayout& pipeline_layout = VulkanPlus::Plus().GetPipelineLayout(pipeline_layout_id).second[0];
-		RenderPass& renderpass = VulkanPlus::Plus().GetRenderPass(renderpass_id).second[0];
+		const RenderPass& renderpass = VulkanPlus::Plus().SwapchainRenderPassWithDepthStencil();
 		configurator.PipelineLayout(pipeline_layout)
 			.RenderPass(renderpass)
 			.AddVertexInputBindings(0, sizeof(float) * 3, VK_VERTEX_INPUT_RATE_VERTEX)
@@ -221,48 +163,7 @@ void TestCubeMap::CreatePipeline()
 
 void TestCubeMap::CreateFramebuffers()
 {
-	auto Create = [&] {
-		RenderPass& renderpass = VulkanPlus::Plus().GetRenderPass(renderpass_id).second[0];
-		dsAttachments_id = VulkanPlus::Plus().CreateDepthStencilAttachments(
-			"test-cubemap-ds-attachments",
-			VulkanBase::Base().SwapchainImageCount(),
-			VK_FORMAT_D24_UNORM_S8_UINT,
-			VulkanBase::Base().SwapchainExtent(),
-			false, 1, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT
-		).first;
-		std::span<DepthStencilAttachment> dsAttachments = VulkanPlus::Plus().GetDepthStencilAttachments(dsAttachments_id).second;
-		VkFramebufferCreateInfo framebufferCreateInfo = {
-			.renderPass = renderpass,
-			.attachmentCount = 2,
-			.width = VulkanBase::Base().SwapchainExtent().width,
-			.height = VulkanBase::Base().SwapchainExtent().height,
-			.layers = 1
-		};
-		std::vector<VkFramebufferCreateInfo> framebufferCreateInfos(VulkanBase::Base().SwapchainImageCount());
-		std::vector<std::vector<VkImageView>> attachments(VulkanBase::Base().SwapchainImageCount());
-		for (uint32_t i = 0; i < VulkanBase::Base().SwapchainImageCount(); i++) {
-			attachments[i].resize(2);
-			framebufferCreateInfos[i].renderPass = renderpass;
-			framebufferCreateInfos[i].attachmentCount = 2;
-			framebufferCreateInfos[i].width = VulkanBase::Base().SwapchainExtent().width;
-			framebufferCreateInfos[i].height = VulkanBase::Base().SwapchainExtent().height;
-			framebufferCreateInfos[i].layers = 1;
-			attachments[i][0] = VulkanBase::Base().SwapchainImageView(i);
-			attachments[i][1] = dsAttachments[i].ImageView();
-			framebufferCreateInfos[i].pAttachments = attachments[i].data();
-		}
-		framebuffers_id = VulkanPlus::Plus().CreateFramebuffers("test-cubemap-framebuffers", VulkanBase::Base().SwapchainImageCount(), framebufferCreateInfos).first;
-		};
 
-	auto Destroy = [&] {
-		VulkanPlus::Plus().DestroyDepthStencilAttachments(dsAttachments_id);
-		VulkanPlus::Plus().DestroyFramebuffers(framebuffers_id);
-		};
-
-	VulkanBase::Base().AddCallback_CreateSwapchain(Create);
-	VulkanBase::Base().AddCallback_DestroySwapchain(Destroy);
-
-	Create();
 }
 
 void TestCubeMap::OtherOperations()
@@ -292,9 +193,9 @@ void TestCubeMap::RecordCommandBuffer()
 {
 	uint32_t current_image_ind = VulkanBase::Base().CurrentImageIndex();
 
-	RenderPass& renderPass = VulkanPlus::Plus().GetRenderPass(renderpass_id).second[0];
+	const RenderPass& renderPass = VulkanPlus::Plus().SwapchainRenderPassWithDepthStencil();
 	const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
-	std::span<Framebuffer> framebuffers = VulkanPlus::Plus().GetFramebuffers(framebuffers_id).second;
+	const Framebuffer& framebuffer = VulkanPlus::Plus().CurrentSwapchainFramebufferWithDepthStencil();
 	PipelineLayout& pipeline_layout = VulkanPlus::Plus().GetPipelineLayout(pipeline_layout_id).second[0];
 	DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(descriptor_set_layout_id).second[0];
 	Pipeline& pipeline = VulkanPlus::Plus().GetPipeline(pipeline_id).second[0];
@@ -306,7 +207,7 @@ void TestCubeMap::RecordCommandBuffer()
 	};
 	VkDeviceSize offset = 0;
 
-	renderPass.Begin(commandBuffer, framebuffers[current_image_ind], renderArea, clearValues);
+	renderPass.Begin(commandBuffer, framebuffer, renderArea, clearValues);
 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
 		0, 1, descriptor_set.Address(), 0, nullptr);
 	vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertex_buffer.Address(), &offset);
