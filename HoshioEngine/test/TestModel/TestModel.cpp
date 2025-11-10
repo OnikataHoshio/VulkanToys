@@ -43,7 +43,7 @@ namespace HoshioEngine {
 
 		renderPass.Begin(commandBuffer, framebuffers[current_image_ind], renderArea, clearValues);
 		PipelineLayout& pipeline_layout = VulkanPlus::Plus().GetPipelineLayout(shader_info.pipeline_layout_id).second[0];
-		DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.uniform_set_layout_id).second[0];
+		DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(uniform_set_layout_id).second[0];
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
 			1, 1, uniform_set.Address(), 0, nullptr);
 		model.Render(shader_info);
@@ -209,8 +209,8 @@ namespace HoshioEngine {
 				.bindingCount = 2,
 				.pBindings = bindings
 			};
-			shader_info.uniform_set_layout_id = VulkanPlus::Plus().CreateDescriptorSetLayout("model-uniform-set-layot", createInfo).first;
-			DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.uniform_set_layout_id).second[0];
+			uniform_set_layout_id = VulkanPlus::Plus().CreateDescriptorSetLayout("model-uniform-set-layot", createInfo).first;
+			DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(uniform_set_layout_id).second[0];
 			VulkanPlus::Plus().DescriptorPool().AllocateDescriptorSets(uniform_set, uniform_set_layout);
 		}
 	}
@@ -218,8 +218,8 @@ namespace HoshioEngine {
 	void TestModel::CreatePipelineLayout()
 	{
 		DescriptorSetLayout& sampler_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.sampler_set_layout_id).second[0];
-		DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.uniform_set_layout_id).second[0];
-		VkDescriptorSetLayout layouts[] = { sampler_set_layout, uniform_set_layout };
+		DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(uniform_set_layout_id).second[0];
+		VkDescriptorSetLayout layouts[] = { sampler_set_layout, uniform_set_layout};
 
 		VkPipelineLayoutCreateInfo createInfo = {
 			.setLayoutCount = 2,

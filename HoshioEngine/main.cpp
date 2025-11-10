@@ -8,7 +8,8 @@
 #include "test/Test3D/Test3D.h"
 #include "test/TestModel/TestModel.h"
 #include "test/TestCurve/CurvePanel.h"
-
+#include "test/TestPBR/TestPBR.h"
+#include "test/TestPBR/TestCubeMap.h"
 using namespace HoshioEngine;
 
 int main() {
@@ -42,15 +43,21 @@ int main() {
 			//	std::make_unique<SimplePathTrace>(sampler_linear, &texture);
 			//simplePathTrace->Init();
 
-			std::unique_ptr<RenderNode> test3D =
-				std::make_unique<Test3D>(sampler_linear);
-			test3D->Init();
+			//std::unique_ptr<RenderNode> test3D =
+			//	std::make_unique<Test3D>(sampler_linear);
+			//test3D->Init();
 
 			//std::unique_ptr<RenderNode> test_model =
 			//	std::make_unique<TestModel>("test/TestModel/Resource/Models/backpack/backpack.obj");
 			//test_model->Init();
 
-			EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<CurvePanel>());
+			//std::unique_ptr<RenderNode> testPBR = std::make_unique<TestPBR>();
+			//testPBR->Init();
+			
+			std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
+			testCubeMap->Init();
+
+			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<CurvePanel>());
 
 			while (!glfwWindowShouldClose(GlfwWindow::pWindow)) {
 				while (glfwGetWindowAttrib(GlfwWindow::pWindow, GLFW_ICONIFIED))
@@ -62,7 +69,7 @@ int main() {
 
 				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				drawScreenNode->Render();
+				testCubeMap->Render();
 
 				commandBuffer.End();
 

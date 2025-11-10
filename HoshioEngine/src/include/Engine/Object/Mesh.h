@@ -36,6 +36,7 @@ namespace HoshioEngine {
 		VertexBuffer vertexBuffer;
 		IndexBuffer indexBuffer;
 
+
 		DescriptorSet sampler_set;
 		DescriptorSet uniform_set;
 
@@ -44,15 +45,15 @@ namespace HoshioEngine {
 		Mesh& operator=(const Mesh&) = delete;
 		Mesh(Mesh&&) noexcept = default;       
 		Mesh& operator=(Mesh&&) noexcept = default;
+		virtual ~Mesh() = default;
 
-		void Render(ShaderInfo& shader_info);
-		void SetupMesh(ShaderInfo& shader_info);
-		std::vector<float> ReorganizeVertexData();
-		std::vector<VertexInputAttribute> GetVertexInputAttributes();
-		uint32_t GetVertexInputAttributeStride();
+		virtual void Render(ShaderInfo& shader_info);
+		virtual void SetupMesh(ShaderInfo& shader_info);
+		virtual void UpdateDescriptorSets(ShaderInfo& shader_info);
+		virtual std::vector<float> ReorganizeVertexData();
+		virtual std::vector<VertexInputAttribute> GetVertexInputAttributes();
+		virtual uint32_t GetVertexInputAttributeStride();
 	};
-
-
 
 }
 

@@ -14,14 +14,16 @@ namespace HoshioEngine {
 	public:
 		Model() = default;
 		Model(const char* file_path);
+		Model(std::vector<Mesh>& meshes);
 		void LoadModel(std::string path);
+		void LoadModel(std::vector<Mesh>& meshes);
 		std::vector<VertexInputAttribute> GetVertexInputeAttributes();
 		uint32_t GetVertexInputAttributesStride();
 		void Render(ShaderInfo& shader_info);
 		void SetupModel(ShaderInfo& shader_info);
 	private:
 		std::vector<Mesh> meshes;
-		std::string directory;
+		std::string directory = "";
 		MODEL_IMPORT_TYPE model_import_type = MODEL_IMPORT_TYPE::MODLE_TYPE_OBJ;
 
 		void CheckModelImportType(std::string& path);

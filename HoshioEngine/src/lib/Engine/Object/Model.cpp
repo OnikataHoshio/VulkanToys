@@ -6,6 +6,10 @@ namespace HoshioEngine {
 		LoadModel(file_path);
 	}
 
+	Model::Model(std::vector<Mesh>& meshes) : meshes(std::move(meshes))
+	{
+	}
+
 	void Model::Render(ShaderInfo& shader_info)
 	{
 		Pipeline& pipeline = VulkanPlus::Plus().GetPipeline(shader_info.pipeline_id).second[0];
@@ -40,6 +44,11 @@ namespace HoshioEngine {
 
 		std::cout << std::format("Successfully load the model : {}\n", path);
 
+	}
+
+	void Model::LoadModel(std::vector<Mesh>& meshes)
+	{
+		this->meshes = std::move(meshes);
 	}
 
 	void Model::CheckModelImportType(std::string& path)

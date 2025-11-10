@@ -9,6 +9,7 @@ namespace HoshioEngine {
 	void Texture::CreateImageMemory(VkImageType imageType, VkFormat format, VkExtent3D extent, uint32_t mipLevelCount, uint32_t arrayLayerCount, VkImageCreateFlags flags)
 	{
 		VkImageCreateInfo createInfo = {
+			.flags = flags,
 			.imageType = imageType,
 			.format = format,
 			.extent = extent,
@@ -301,6 +302,7 @@ namespace HoshioEngine {
 		}
 	}
 
+
 	Texture2D::Texture2D(const char* filePath, VkFormat initial_format, VkFormat final_format, bool generateMip)
 	{
 		Create(filePath, initial_format, final_format, generateMip);
@@ -331,7 +333,6 @@ namespace HoshioEngine {
 		return mipLevelCount;
 	}
 
-
 	VkDescriptorImageInfo Texture2D::DescriptorImageInfo(VkSampler sampler, uint32_t mipLevel) const
 	{
 		return VkDescriptorImageInfo{ sampler, imageViews[mipLevel], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
@@ -351,6 +352,398 @@ namespace HoshioEngine {
 		size_t imageDataSize = VkDeviceSize(vkuFormatElementSize(initial_format)) * extent.width * extent.height;
 		StagingBuffer_MainThread::SynchronizeData(pImageData, imageDataSize);
 		Create_Internal(initial_format, final_format, generateMip);
+	}
+
+	void TextureArray::Create_Internal(VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		uint32_t mipLevelCount = generateMipmap ? ImageUtils::CalculateMipLevelCount(extent) : 1;
+		CreateImageMemory(VK_IMAGE_TYPE_2D, format_final, { extent.width, extent.height, 1 }, mipLevelCount, layerCount);
+		CreateImageView(VK_IMAGE_VIEW_TYPE_2D_ARRAY, format_final, mipLevelCount, layerCount);
+		if (format_initial == format_final)
+			CopyBlitAndGenerateMipmap2D(StagingBuffer_MainThread::Main(), imageMemory.Image(), imageMemory.Image(), extent, mipLevelCount, layerCount);
+		else {
+			VkImageCreateInfo createInfo = {
+				.imageType = VK_IMAGE_TYPE_2D,
+				.format = format_initial,
+				.extent = { extent.width, extent.height, 1 },
+				.mipLevels = 1,
+				.arrayLayers = layerCount,
+				.samples = VK_SAMPLE_COUNT_1_BIT,
+				.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+			};
+			ImageMemory imageMemory_conversion(createInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+			CopyBlitAndGenerateMipmap2D(StagingBuffer_MainThread::Main(), imageMemory_conversion.Image(), imageMemory.Image(), extent, mipLevelCount, 1);
+		}
+	}
+
+	TextureArray::TextureArray(const char* filepath, VkExtent2D extentInTiles, VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		Create(filepath, extentInTiles, format_initial, format_final, generateMipmap);
+	}
+
+	TextureArray::TextureArray(const uint8_t* pImageData, VkExtent2D fullExtent, VkExtent2D extentInTiles, VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		Create(pImageData, fullExtent, extentInTiles, format_initial, format_final, generateMipmap);
+	}
+
+	TextureArray::TextureArray(ArrayRef<const char* const> filepaths, VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		Create(filepaths, format_initial, format_final, generateMipmap);
+	}
+
+	TextureArray::TextureArray(ArrayRef<const uint8_t* const> psImageData, VkExtent2D extent, VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		Create(psImageData, extent, format_initial, format_final, generateMipmap);
+	}
+
+	VkExtent2D TextureArray::Extent() const
+	{
+		return extent;
+	}
+
+	uint32_t TextureArray::Width() const
+	{
+		return extent.width;
+	}
+
+	uint32_t TextureArray::Height() const
+	{
+		return extent.height;
+	}
+
+	uint32_t TextureArray::LayerCount() const
+	{
+		return layerCount;
+	}
+
+	void TextureArray::Create(const char* filepath, VkExtent2D extentInTiles, VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		if (extentInTiles.width * extentInTiles.height > VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers) {
+			std::cerr << std::format("[ TextureArray ] ERROR\nLayer count is out of limit! Must be less than: {}\nFile: {}\n", VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers, filepath);
+			throw std::runtime_error("[ TextureArray ] ERROR::Layer count is out of limit!");
+		}
+		VkExtent2D fullExtent;
+		std::unique_ptr<uint8_t[]> pImageData = LoadFile(filepath, fullExtent, format_initial);
+		if (pImageData) {
+			if (fullExtent.width % extentInTiles.width ||
+				fullExtent.height % extentInTiles.height) {
+				std::cerr << std::format(
+					"[ TextureArray ] ERROR\nImage not available!\nFile: {}\nImage width must be in multiples of {}\nImage height must be in multiples of {}\n",
+					filepath, extentInTiles.width, extentInTiles.height);
+				throw std::runtime_error("[ TextureArray ] ERROR::Image width must be in multiples !");
+			}
+			else
+				Create(pImageData.get(), fullExtent, extentInTiles, format_initial, format_final, generateMipmap);
+		}
+
+	}
+
+	void TextureArray::Create(const uint8_t* pImageData, VkExtent2D fullExtent, VkExtent2D extentInTiles, VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		layerCount = extentInTiles.width * extentInTiles.height;
+		if (layerCount > VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers) {
+			std::cerr << std::format("[ TextureArray ] ERROR\nLayer count is out of limit! Must be less than: {}\n", VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers);
+			throw std::runtime_error("[ TextureArray ] ERROR::Layer count is out of limit!");
+		}
+		if (fullExtent.width % extentInTiles.width ||
+			fullExtent.height % extentInTiles.height) {
+			std::cerr << std::format(
+				"[ TextureArray ] ERROR\nImage not available!\nImage width must be in multiples of {}\nImage height must be in multiples of {}\n",
+				extentInTiles.width, extentInTiles.height);
+			throw std::runtime_error("[ TextureArray ] ERROR::Image width must be in multiples !");
+		}
+
+		extent.width = fullExtent.width / extentInTiles.width;
+		extent.height = fullExtent.height / extentInTiles.height;
+
+		size_t dataSizePerPixel = vkuFormatElementSize(format_initial);
+		size_t imageDataSize = dataSizePerPixel * fullExtent.width * fullExtent.height;
+
+		if (extentInTiles.width == 1)
+			StagingBuffer_MainThread::SynchronizeData(pImageData, imageDataSize);
+		else {
+			uint8_t* pData_dst = static_cast<uint8_t*>(StagingBuffer_MainThread::MapMemory(imageDataSize));
+			size_t dataSizePerRow = dataSizePerPixel * extent.width;
+			for (size_t j = 0; j < extentInTiles.height; j++)
+				for (size_t i = 0; i < extentInTiles.width; i++) {
+					for (size_t k = 0; k < extent.height; k++)
+						memcpy(
+							pData_dst,
+							pImageData + (i * extent.width + (k + j * extent.height) * fullExtent.width) * dataSizePerPixel,
+							dataSizePerRow),
+						pData_dst += dataSizePerRow; //每拷贝一行，pData_dst向后移动一行的数据大小
+				}
+			StagingBuffer_MainThread::UnMapMemory();
+		}
+		Create_Internal(format_initial, format_final, generateMipmap);
+	}
+
+	void TextureArray::Create(ArrayRef<const char* const> filepaths, VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		if (filepaths.size() > VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers) {
+			std::cerr << std::format(
+				"[ TextureArray ] ERROR\nLayer count is out of limit! Must be less than: {}\n",
+				VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers);
+			throw std::runtime_error("[ TextureArray ] ERROR::Layer count is out of limit!");
+		}
+		std::unique_ptr psImageData = std::make_unique<std::unique_ptr<uint8_t[]>[]>(filepaths.size());
+		for (size_t i = 0; i < filepaths.size(); i++) {
+			VkExtent2D extent_currentLayer;
+			psImageData[i] = LoadFile(filepaths[i], extent_currentLayer, format_initial);
+			if (psImageData[i]) {
+				if (i == 0)
+					extent = extent_currentLayer;
+				if (extent.width == extent_currentLayer.width &&
+					extent.height == extent_currentLayer.height)
+					continue;
+				else {
+					std::cerr << std::format(
+						"[ TextureArray ] ERROR\nImage not available!\nFile: {}\nAll the images must be in same size!\n",
+						filepaths[i]);//fallthrough
+					throw std::runtime_error("[ TextureArray ] All the images must be in same size!");
+				}
+			}
+			return;
+		}
+		Create({ reinterpret_cast<const uint8_t* const*>(psImageData.get()), filepaths.size() }, extent, format_initial, format_final, generateMipmap);
+	}
+
+	void TextureArray::Create(ArrayRef<const uint8_t* const> psImageData, VkExtent2D extent, VkFormat format_initial, VkFormat format_final, bool generateMipmap)
+	{
+		layerCount = psImageData.size();
+		if (layerCount > VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers) {
+			std::cerr << std::format(
+				"[ TextureArray ] ERROR\nLayer count is out of limit! Must be less than: {}\n",
+				VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers);
+				throw std::runtime_error("[ TextureArray ] ERROR::Layer count is out of limit!");
+		}
+		this->extent = extent;
+		size_t dataSizePerImage = vkuFormatElementSize(format_initial) * extent.width * extent.height;
+		size_t imageDataSize = dataSizePerImage * layerCount;
+		uint8_t* pData_dst = static_cast<uint8_t*>(StagingBuffer_MainThread::MapMemory(imageDataSize));
+		for (size_t i = 0; i < layerCount; i++)
+			memcpy(pData_dst, psImageData[i], dataSizePerImage),
+			pData_dst += dataSizePerImage;
+		StagingBuffer_MainThread::UnMapMemory();
+		//Create image and allocate memory, create image view, then copy data from staging buffer to image
+		Create_Internal(format_initial, format_final, generateMipmap);
+	}
+
+	VkExtent2D TextureCube::GetExtentInTiles(const glm::uvec2*& facePositions, bool lookFromOutside, bool loadPreviousResult)
+	{
+		static constexpr glm::uvec2 facePositions_default[][6] = {
+			{ { 2, 1 }, { 0, 1 }, { 1, 0 }, { 1, 2 }, { 3, 1 }, { 1, 1 } },
+			{ { 2, 1 }, { 0, 1 }, { 1, 0 }, { 1, 2 }, { 1, 1 }, { 3, 1 } }
+		};
+		static VkExtent2D extentInTiles;
+		if (loadPreviousResult)
+			return extentInTiles;
+		extentInTiles = { 1, 1 };
+		if (!facePositions)
+			facePositions = facePositions_default[lookFromOutside],
+			extentInTiles = { 4, 3 };
+		else
+			for (size_t i = 0; i < 6; i++) {
+				if (facePositions[i].x >= extentInTiles.width)
+					extentInTiles.width = facePositions[i].x + 1;
+				if (facePositions[i].y >= extentInTiles.height)
+					extentInTiles.height = facePositions[i].y + 1;
+			}
+		return extentInTiles;
+	}
+
+	void TextureCube::Create_Internal(VkFormat format_initial, VkFormat format_final, bool generateMip) {
+		uint32_t mipLevelCount = generateMip ? ImageUtils::CalculateMipLevelCount(extent) : 1;
+		CreateImageMemory(VK_IMAGE_TYPE_2D, format_final, { extent.width, extent.height, 1 }, mipLevelCount, 6, VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT);
+		CreateImageView(VK_IMAGE_VIEW_TYPE_CUBE, format_final, mipLevelCount, 6);
+		if (format_initial == format_final)
+			CopyBlitAndGenerateMipmap2D(StagingBuffer_MainThread::Main(), imageMemory.Image(), imageMemory.Image(), extent, mipLevelCount, 6);
+		else {
+			VkImageCreateInfo createInfo = {
+				.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+				.imageType = VK_IMAGE_TYPE_2D,
+				.format = format_initial,
+				.extent = { extent.width, extent.height, 1 },
+				.mipLevels = 1,
+				.arrayLayers = 6,
+				.samples = VK_SAMPLE_COUNT_1_BIT,
+				.usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT
+			};
+			ImageMemory imageMemory_conversion(createInfo, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+			CopyBlitAndGenerateMipmap2D(StagingBuffer_MainThread::Main(), imageMemory_conversion.Image(), imageMemory.Image(), extent, mipLevelCount, 6);
+		}
+	}
+
+	TextureCube::TextureCube(const char* filepath, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap) {
+		Create(filepath, facePositions, format_initial, format_final, lookFromOutside, generateMipmap);
+	}
+
+	TextureCube::TextureCube(const uint8_t* pImageData, VkExtent2D fullExtent, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
+	{
+		Create(pImageData, fullExtent, facePositions, format_initial, format_final, lookFromOutside, generateMipmap);
+	}
+
+	TextureCube::TextureCube(const char* const* filepaths, VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
+	{
+		Create(filepaths, format_initial, format_final, lookFromOutside, generateMipmap);
+	}
+
+	TextureCube::TextureCube(const uint8_t* const* psImageData, VkExtent2D extent, VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
+	{
+		Create(psImageData, extent, format_initial, format_final, lookFromOutside, generateMipmap);
+	}
+
+	VkExtent2D TextureCube::Extent() const
+	{
+		return extent;
+	}
+
+	uint32_t TextureCube::Width() const
+	{
+		return extent.width;
+	}
+
+	uint32_t TextureCube::Height() const
+	{
+		return extent.height;
+	}
+	void TextureCube::Create(const char* filepath, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
+	{
+		VkExtent2D fullExtent;
+		std::unique_ptr<uint8_t[]> pImageData = LoadFile(filepath, fullExtent, format_initial);
+		if (pImageData) {
+			if (VkExtent2D extentInTiles = GetExtentInTiles(facePositions, lookFromOutside);
+				fullExtent.width % extentInTiles.width ||
+				fullExtent.height % extentInTiles.height){
+				std::cerr << std::format("[TextureCube] ERROR\nImage not available!\nFile: {}\nImage width should be in multiples of{}\nImage height should be in multiples of{}\n",
+					filepath, extentInTiles.width, extentInTiles.height);
+				throw std::runtime_error("[TextureCube] ERROR ::Image width should be in multiples");
+				}
+			else {
+				extent.width = fullExtent.width / extentInTiles.width;
+				extent.height = fullExtent.height / extentInTiles.height;
+				Create(pImageData.get(), { fullExtent.width, UINT32_MAX }, facePositions, format_initial, format_final, lookFromOutside, generateMipmap);
+			}
+		}
+	}
+
+	void TextureCube::Create(const uint8_t* pImageData, VkExtent2D fullExtent, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
+	{
+		VkExtent2D extentInTiles;
+		if (fullExtent.height == UINT32_MAX)
+			extentInTiles = GetExtentInTiles(facePositions, lookFromOutside, true);
+		else {
+			extentInTiles = GetExtentInTiles(facePositions, lookFromOutside);
+			if (fullExtent.width % extentInTiles.width ||
+				fullExtent.height % extentInTiles.height) {
+				std::cerr << std::format("[TextureCube] ERROR\nImage not available!\nImage width should be in multiples of{}\nImage height should be in multiples of{}\n",
+					extentInTiles.width, extentInTiles.height);
+				throw std::runtime_error("[TextureCube] ERROR ::Image width should be in multiples");
+			}
+			extent.width = fullExtent.width / extentInTiles.width;
+			extent.height = fullExtent.height / extentInTiles.height;
+		}
+
+		size_t dataSizePerPixel = vkuFormatElementSize(format_initial);
+		size_t dataSizePerRow = dataSizePerPixel * extent.width;
+		size_t dataSizePerImage = dataSizePerRow * extent.height;
+		size_t imageDataSize = dataSizePerImage * 6;
+		uint8_t* pData_dst = static_cast<uint8_t*>(StagingBuffer_MainThread::MapMemory(imageDataSize));
+
+		if (lookFromOutside) {
+			if (extentInTiles.width == 1 && extentInTiles.height == 6 &&
+				facePositions[0].y == 0 && facePositions[1].y == 1 &&
+				facePositions[2].y == 2 && facePositions[3].y == 3 &&
+				facePositions[4].y == 4 && facePositions[5].y == 5)
+				memcpy(pData_dst, pImageData, imageDataSize);
+			else
+				for (size_t face = 0; face < 6; face++)
+					for (uint32_t j = 0; j < extent.height; j++)
+						memcpy(
+							pData_dst,
+							pImageData + dataSizePerPixel * (facePositions[face].x * extent.width + (j + facePositions[face].y * extent.height) * fullExtent.width),
+							dataSizePerRow),
+						pData_dst += dataSizePerRow;
+		}
+		else {
+			for (size_t face = 0; face < 6; face++) {
+				if (face != 2 && face != 3)
+					for (uint32_t i = 0; i < extent.height; i++)
+						for (uint32_t j = 0; j < extent.width; j++)
+							memcpy(
+								pData_dst,
+								pImageData + dataSizePerPixel * (extent.width - 1 - j + facePositions[face].x * extent.width + (i + facePositions[face].y * extent.height) * fullExtent.width),
+								dataSizePerPixel),
+							pData_dst += dataSizePerPixel;
+				else
+					for (uint32_t j = 0; j < extent.height; j++)
+						for (uint32_t k = 0; k < extent.width; k++)
+							memcpy(
+								pData_dst,
+								pImageData + dataSizePerPixel * (k + facePositions[face].x * extent.width + ((extent.height - 1 - j) + facePositions[face].y * extent.height) * fullExtent.width),
+								dataSizePerPixel),
+							pData_dst += dataSizePerPixel;
+			}
+		}
+		StagingBuffer_MainThread::UnMapMemory();
+		Create_Internal(format_initial, format_final, generateMipmap);
+	}
+
+	void TextureCube::Create(const char* const* filepaths, VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
+	{
+		std::unique_ptr<uint8_t[]> psImageData[6] = {};
+		for (size_t i = 0; i < 6; i++) {
+			VkExtent2D extent_currentLayer;
+			psImageData[i] = LoadFile(filepaths[i], extent_currentLayer, format_initial);
+			if (psImageData[i]) {
+				if (i == 0)
+					extent = extent_currentLayer;
+				if (extent.width == extent_currentLayer.width ||
+					extent.height == extent_currentLayer.height)
+					continue;
+				else {
+					std::cerr << std::format("[ textureCube ] ERROR\nImage not available!\nFile: {}\nAll the images must be in same size!\n", filepaths[i]);
+					throw std::runtime_error("[ textureCube ] ERROR::Image not available!");
+				}
+			}
+			return;
+		}
+		Create(reinterpret_cast<const uint8_t* const*>(psImageData), extent, format_initial, format_final, lookFromOutside, generateMipmap);
+	}
+
+	void TextureCube::Create(const uint8_t* const* psImageData, VkExtent2D extent, VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
+	{
+		this->extent = extent;
+		size_t dataSizePerPixel = vkuFormatElementSize(format_initial);
+		size_t dataSizePerImage = dataSizePerPixel * extent.width * extent.height;
+		size_t imageDataSize = dataSizePerImage * 6;
+		uint8_t* pData_dst = static_cast<uint8_t*>(StagingBuffer_MainThread::MapMemory(imageDataSize));
+		if (lookFromOutside) {
+			for (size_t i = 0; i < 6; i++)
+				memcpy(pData_dst + dataSizePerImage * i, psImageData[i], dataSizePerImage);
+		}
+		else {
+			for (size_t face = 0; face < 6; face++) {
+				if (face != 2 && face != 3)
+					for (uint32_t j = 0; j < extent.height; j++)
+						for (uint32_t i = 0; i < extent.width; i++)
+							memcpy(
+								pData_dst,
+								psImageData[face] + dataSizePerPixel * ((j + 1) * extent.width - 1 - i),
+								dataSizePerPixel),
+							pData_dst += dataSizePerPixel;
+				else
+					for (uint32_t j = 0; j < extent.height; j++)
+						for (uint32_t i = 0; i < extent.width; i++)
+							memcpy(
+								pData_dst,
+								psImageData[face] + dataSizePerPixel * ((extent.height - 1 - j) * extent.width + i),
+								dataSizePerPixel),
+							pData_dst += dataSizePerPixel;
+			}
+		}
+		StagingBuffer_MainThread::UnMapMemory();
+		Create_Internal(format_initial, format_final, generateMipmap);
 	}
 
 #pragma endregion

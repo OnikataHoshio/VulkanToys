@@ -59,6 +59,64 @@ namespace HoshioEngine {
 		void Create(const uint8_t* pImageData, VkExtent2D extent, VkFormat initial_format, VkFormat final_format, bool generateMip = true);
 	};
 
+	class TextureArray : public Texture {
+	protected:
+		VkExtent2D extent = {};
+		uint32_t layerCount = 0;
+
+		void Create_Internal(VkFormat format_initial, VkFormat format_final, bool generateMipmap);
+	public:
+		TextureArray() = default;
+		TextureArray(const char* filepath, VkExtent2D extentInTiles, VkFormat format_initial, VkFormat format_final, bool generateMipmap = true);
+		TextureArray(const uint8_t* pImageData, VkExtent2D fullExtent, VkExtent2D extentInTiles, VkFormat format_initial, VkFormat format_final, bool generateMipmap = true);
+		TextureArray(ArrayRef<const char* const> filepaths, VkFormat format_initial, VkFormat format_final, bool generateMipmap = true);
+		TextureArray(ArrayRef<const uint8_t* const> psImageData, VkExtent2D extent, VkFormat format_initial, VkFormat format_final, bool generateMipmap = true);
+		Texture::DescriptorImageInfo;
+		VkExtent2D Extent() const;
+		uint32_t Width() const;
+		uint32_t Height() const;
+		uint32_t LayerCount() const;
+		void Create(const char* filepath, VkExtent2D extentInTiles, VkFormat format_initial, VkFormat format_final, bool generateMipmap = true);
+		void Create(const uint8_t* pImageData, VkExtent2D fullExtent, VkExtent2D extentInTiles, VkFormat format_initial, VkFormat format_final, bool generateMipmap = true);
+		void Create(ArrayRef<const char* const> filepaths, VkFormat format_initial, VkFormat format_final, bool generateMipmap = true);
+		void Create(ArrayRef<const uint8_t* const> psImageData, VkExtent2D extent, VkFormat format_initial, VkFormat format_final, bool generateMipmap = true);
+	};
+
+	class TextureCube : public Texture {
+	protected:
+		VkExtent2D extent = {};
+		VkExtent2D GetExtentInTiles(const glm::uvec2*& facePositions, bool lookFromOutside, bool loadPreviousResult = false);
+		void Create_Internal(VkFormat format_initial, VkFormat format_final, bool generateMipmap);
+	public:
+		/*
+			Order of facePositions[6], in left handed coordinate, looking from inside:
+			right(+x) left(-x) top(+y) bottom(-y) front(-z) back(+z)
+			Not related to NDC.
+			If lookFromOutside is true, the order is the same.
+			--------------------
+			Default face positions, looking from inside, is:
+			[      ][ top  ][      ][      ]
+			[ left ][front ][right ][ back ]
+			[      ][bottom][      ][      ]
+			If lookFromOutside is true, front and back is swapped.
+			What ever the facePositions are, make sure the image matches the looking which a cube is unwrapped as above.
+		*/
+		TextureCube() = default;
+		TextureCube(const char* filepath, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside = false, bool generateMipmap = true);
+		TextureCube(const uint8_t* pImageData, VkExtent2D fullExtent, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside = false, bool generateMipmap = true);
+		TextureCube(const char* const* filepaths, VkFormat format_initial, VkFormat format_final, bool lookFromOutside = false, bool generateMipmap = true);
+		TextureCube(const uint8_t* const* psImageData, VkExtent2D extent, VkFormat format_initial, VkFormat format_final, bool lookFromOutside = false, bool generateMipmap = true);
+		Texture::DescriptorImageInfo;
+		VkExtent2D Extent() const;
+		uint32_t Width() const;
+		uint32_t Height() const;
+		void Create(const char* filepath, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside = false, bool generateMipmap = true);
+		void Create(const uint8_t* pImageData, VkExtent2D fullExtent, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside = false, bool generateMipmap = true);
+		void Create(const char* const* filepaths, VkFormat format_initial, VkFormat format_final, bool lookFromOutside = false, bool generateMipmap = true);
+		void Create(const uint8_t* const* psImageData, VkExtent2D extent, VkFormat format_initial, VkFormat format_final, bool lookFromOutside = false, bool generateMipmap = true);
+	};
+
+
 	class Attachment {
 	protected:
 		ImageMemory imageMemory;

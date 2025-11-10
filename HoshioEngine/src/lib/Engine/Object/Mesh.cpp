@@ -18,12 +18,21 @@ namespace HoshioEngine {
 		const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
 
 		VkDeviceSize offset = 0;
-		vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffer.Address(), &offset);
-		vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
+		if(!vertices.empty())
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffer.Address(), &offset);
+		if (!indices.empty())
+			vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 		//bind sampler descriptor set
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 
-			0, 1,sampler_set.Address(), 0, nullptr);
-		vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
+		if (shader_info.sampler_set_layout_id != M_INVALID_ID)
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 
+				0, 1,sampler_set.Address(), 0, nullptr);
+		if (shader_info.uniform_set_layout_id != M_INVALID_ID)
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+				2, 1, uniform_set.Address(), 0, nullptr);
+		if(!indices.empty())
+			vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
+		else
+			vkCmdDraw(commandBuffer, vertices.size(), 1, 0, 0);
 	}
 
 	std::vector<float> Mesh::ReorganizeVertexData()
@@ -109,46 +118,62 @@ namespace HoshioEngine {
 	{
 		//create buffer for the mesh
 		std::vector<float> reorganize_vertices = ReorganizeVertexData();
-		vertexBuffer.Create(sizeof(float) * reorganize_vertices.size())
-			.TransferData(reorganize_vertices.data(), sizeof(float) * reorganize_vertices.size());
+		if(!vertices.empty())
+			vertexBuffer.Create(sizeof(float) * reorganize_vertices.size())
+				.TransferData(reorganize_vertices.data(), sizeof(float) * reorganize_vertices.size());
 
-		indexBuffer.Create(sizeof(uint32_t) * indices.size())
-			.TransferData(indices.data(), sizeof(uint32_t) * indices.size());
+		if(!indices.empty())
+			indexBuffer.Create(sizeof(uint32_t) * indices.size())
+				.TransferData(indices.data(), sizeof(uint32_t) * indices.size());
 
 		//allocate descriptor set for the mesh
-		DescriptorSetLayout& sampler_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.sampler_set_layout_id).second[0];
-		DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.uniform_set_layout_id).second[0];
-		Sampler& sampler = VulkanPlus::Plus().GetSampler(shader_info.sampler_id).second[0];
 
-		VulkanPlus::Plus().DescriptorPool().AllocateDescriptorSets(sampler_set, sampler_set_layout);
-		VulkanPlus::Plus().DescriptorPool().AllocateDescriptorSets(uniform_set, uniform_set_layout);
-
-		//setup sampler descriptor set for the mesh
-		uint32_t count_diffuse = 0;
-		uint32_t count_specular = 0;
-		uint32_t count_normal = 0;
-		uint32_t count_other = 0;
-		for (auto& texture_info : textures) {
-			Texture2D& texture = VulkanPlus::Plus().GetTexture2D(texture_info.id).second[0];
-			switch (texture_info.type)
-			{
-			case TEXTURE_TYPE::DIFFUSE:
-			{
-				sampler_set.Write(texture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, count_diffuse++);
-				break;
-			}
-			case TEXTURE_TYPE::SPECULAR:
-				sampler_set.Write(texture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, count_specular++);
-				break;
-			case TEXTURE_TYPE::NORMAL:
-				sampler_set.Write(texture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, count_normal++);
-				break;
-			default:
-				sampler_set.Write(texture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, count_other++);
-				break;
-			}
+		if (shader_info.uniform_set_layout_id != M_INVALID_ID) {
+			DescriptorSetLayout& uniform_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.uniform_set_layout_id).second[0];
+			VulkanPlus::Plus().DescriptorPool().AllocateDescriptorSets(uniform_set, uniform_set_layout);
 		}
 
+
+		if (shader_info.sampler_set_layout_id != M_INVALID_ID) {
+			DescriptorSetLayout& sampler_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.sampler_set_layout_id).second[0];
+			if (shader_info.sampler_id == M_INVALID_ID) {
+				std::cout << std::format("[Mesh] WARNING : shader_info.sampler_id is empty!");
+				return;
+			}
+			else {
+				Sampler& sampler = VulkanPlus::Plus().GetSampler(shader_info.sampler_id).second[0];
+				VulkanPlus::Plus().DescriptorPool().AllocateDescriptorSets(sampler_set, sampler_set_layout);
+				//setup sampler descriptor set for the mesh
+				uint32_t count_diffuse = 0;
+				uint32_t count_specular = 0;
+				uint32_t count_normal = 0;
+				uint32_t count_other = 0;
+				for (auto& texture_info : textures) {
+					Texture2D& texture = VulkanPlus::Plus().GetTexture2D(texture_info.id).second[0];
+					switch (texture_info.type)
+					{
+					case TEXTURE_TYPE::DIFFUSE:
+					{
+						sampler_set.Write(texture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 0, count_diffuse++);
+						break;
+					}
+					case TEXTURE_TYPE::SPECULAR:
+						sampler_set.Write(texture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, count_specular++);
+						break;
+					case TEXTURE_TYPE::NORMAL:
+						sampler_set.Write(texture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2, count_normal++);
+						break;
+					default:
+						sampler_set.Write(texture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 3, count_other++);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	void Mesh::UpdateDescriptorSets(ShaderInfo& shader_info)
+	{
 	}
 
 }

@@ -21,6 +21,7 @@ namespace HoshioEngine {
 		UniformBuffer vertex_uniform_buffer;
 		UniformBuffer fragment_uniform_buffer;
 
+		int uniform_set_layout_id = M_INVALID_ID;
 		DescriptorSet uniform_set;
 
 		void UpdateDescriptorSets() override;
