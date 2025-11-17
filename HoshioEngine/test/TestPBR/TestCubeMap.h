@@ -16,6 +16,10 @@ public:
 	int dsAttachments_id = M_INVALID_ID;
 	int framebuffers_id = M_INVALID_ID;
 
+	int cubemap_id = M_INVALID_ID;
+
+	CubeAttachment cubeAttachment;
+
 	struct CubemapUniform {
 		glm::mat4 model = {};
 		glm::mat4 view = {};
@@ -25,8 +29,6 @@ public:
 	VertexBuffer vertex_buffer;
 	UniformBuffer uniform_buffer;
 	DescriptorSet descriptor_set;
-
-	TextureCube cubemap;
 
 	TestCubeMap() = default;
 

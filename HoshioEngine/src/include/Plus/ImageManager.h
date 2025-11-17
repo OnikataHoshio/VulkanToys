@@ -171,17 +171,26 @@ namespace HoshioEngine {
 		Attachment::AddressOfImageView;
 		Attachment::DescriptorImageInfo;
 
+		VkImageView ImageView(uint32_t layerLevel) const;
+		VkImageView BaseMipImageView() const;
+		const VkImageView* AddressOfBaseMipImageView() const;
+		const VkImageView* AddressOfImageView(uint32_t layerLevel) const;
+		VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, uint32_t layerLevel) const;
+		VkDescriptorImageInfo BaseMipDescriptorImageInfo(VkSampler sampler) const;
 		uint32_t MipLevelCount() const;
 
 		CubeAttachment() = default;
 		CubeAttachment(VkFormat format, VkExtent2D extent, bool hasMipmap = true, 
 			VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, VkImageUsageFlags otherUsages = 0);
 
+
 		void Create(VkFormat format, VkExtent2D extent, bool hasMipmap = true, 
 			VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT, VkImageUsageFlags otherUsages = 0);
 
 	private:
 		uint32_t mipLevelCount = 1;
+		std::vector<HoshioEngine::ImageView> imageViews;
+		HoshioEngine::ImageView baseMipImageView;
 	};
 
 

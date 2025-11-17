@@ -8,7 +8,7 @@ namespace HoshioEngine {
 	class Actor {
 	protected:
 		glm::vec3 position = glm::vec3(0.0f);
-		glm::vec3 rotation = glm::vec3(0.0f);
+		glm::vec3 rotation = glm::vec3(0.0f); // Ω«∂»÷∆
 		glm::vec3 scale = glm::vec3(1.0f);
 
 		glm::mat4x4 transform = glm::mat4x4(1.0f);
@@ -25,14 +25,18 @@ namespace HoshioEngine {
 
 		const glm::vec3& Scale() const;
 
-		const glm::mat4x4& ModelTransform() const;
+		const glm::mat4& ModelTransform() const;
 
 		//non-const
-		void SetPosition(const glm::vec3& position);
+		virtual void SetPosition(const glm::vec3 position);
 
-		void SetRotation(const glm::vec3& rotation);
+		virtual void SetRotation(const glm::vec3 rotation);
 
-		void SetScale(const glm::vec3& scale);
+		virtual void SetScale(const glm::vec3 scale);
+
+
+	protected:
+		const glm::mat4 RotationMatrix() const;
 
 	};
 

@@ -1,4 +1,4 @@
-#include "Engine/Actor/Vertex.h"
+#include "Engine/Data/Vertex.h"
 
 namespace HoshioEngine {
 	Vertex::Vertex(glm::vec3 position, glm::vec3 normal)

@@ -891,6 +891,71 @@ namespace HoshioEngine {
 
 
 #pragma region CubeAttachment
+	VkImageView CubeAttachment::ImageView(uint32_t layerLevel) const
+	{
+		if (imageViews.empty()) 
+		{
+			std::cout << std::format("[CubeAttachment]WARNING::CubeAttachment do not have a legal imageview!");
+			return {};
+		}
+
+		if (layerLevel >= 6) 
+		{
+			layerLevel = 5;
+			std::cout << std::format("[CubeAttachment]WARNING::layerLevel is larger than the max layer level 6 of cube map attachment!Automatically clamped!");
+		}
+
+		return imageViews[layerLevel];
+	}
+
+	VkImageView CubeAttachment::BaseMipImageView() const
+	{
+		return baseMipImageView;
+	}
+
+	const VkImageView* CubeAttachment::AddressOfBaseMipImageView() const
+	{
+		return baseMipImageView.Address();
+	}
+
+	const VkImageView* CubeAttachment::AddressOfImageView(uint32_t layerLevel) const
+	{
+		if (imageViews.empty())
+		{
+			std::cout << std::format("[CubeAttachment]WARNING::CubeAttachment do not have a legal imageview!");
+			return {};
+		}
+
+		if (layerLevel >= 6)
+		{
+			layerLevel = 5;
+			std::cout << std::format("[CubeAttachment]WARNING::layerLevel is larger than the max layer level 6 of cube map attachment!Automatically clamped!");
+		}
+
+		return imageViews[layerLevel].Address();
+	}
+
+	VkDescriptorImageInfo CubeAttachment::DescriptorImageInfo(VkSampler sampler, uint32_t layerLevel) const
+	{
+		if (imageViews.empty())
+		{
+			std::cout << std::format("[CubeAttachment]WARNING::CubeAttachment do not have a legal imageview!");
+			return {};
+		}
+
+		if (layerLevel >= 6)
+		{
+			layerLevel = 5;
+			std::cout << std::format("[CubeAttachment]WARNING::layerLevel is larger than the max layer level 6 of cube map attachment!Automatically clamped!");
+		}
+		return  VkDescriptorImageInfo{ sampler, imageViews[layerLevel], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	}
+
+	VkDescriptorImageInfo CubeAttachment::BaseMipDescriptorImageInfo(VkSampler sampler) const
+	{
+		return VkDescriptorImageInfo{ sampler, baseMipImageView , VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+	}
+
 	uint32_t HoshioEngine::CubeAttachment::MipLevelCount() const
 	{
 		return mipLevelCount;
@@ -921,11 +986,22 @@ namespace HoshioEngine {
 
 		VkImageViewCreateInfo imageViewCreateInfo = {
 			.image = imageMemory.Image(),
-			.viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+			.viewType = VK_IMAGE_VIEW_TYPE_CUBE,
 			.format = format,
 			.subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, mipLevelCount, 0 , 6}
 		};
 		imageView.Create(imageViewCreateInfo);
+
+		imageViewCreateInfo.subresourceRange.levelCount = 1;
+		baseMipImageView.Create(imageViewCreateInfo);
+
+		imageViewCreateInfo.subresourceRange.layerCount = 1;
+		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+		for (uint32_t i = 0; i < 6; i++) {
+			imageViewCreateInfo.subresourceRange.baseArrayLayer = i;
+			imageViews.emplace_back(imageViewCreateInfo);
+		}
+
 	}
 #pragma endregion
 

@@ -1,7 +1,7 @@
 #ifndef _MODEL_H_
 #define _MODEL_H_
 
-#include "Mesh.h"
+#include "Engine/Data/Mesh.h"
 #include "Actor.h"
 
 namespace HoshioEngine {

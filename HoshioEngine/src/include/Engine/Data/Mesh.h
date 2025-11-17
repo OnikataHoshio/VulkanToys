@@ -2,7 +2,7 @@
 #define _MESH_H_
 
 #include "Plus/VulkanPlus.h"
-#include "Engine/Actor/Vertex.h"
+#include "Engine/Data/Vertex.h"
 
 namespace HoshioEngine {
 
