@@ -78,6 +78,8 @@ namespace HoshioEngine {
 
 		void TransferData(const void* pData_src, VkDeviceSize size, VkDeviceSize offset = 0) const;
 
+		void TransferData(const void* pData_src, uint32_t elementCount, VkDeviceSize elementSize, VkDeviceSize stride_src, VkDeviceSize stride_dst, VkDeviceSize offset = 0) const;
+
 		void TransferData(const auto& data_src) const {
 			TransferData(&data_src, sizeof data_src);
 		};

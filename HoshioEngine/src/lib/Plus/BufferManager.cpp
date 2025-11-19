@@ -216,6 +216,27 @@ namespace HoshioEngine {
 		VulkanPlus::Plus().ExecuteCommandBuffer_Graphics(commandBuffer);
 	}
 
+	void DeviceLocalBuffer::TransferData(const void* pData_src, uint32_t elementCount, VkDeviceSize elementSize, VkDeviceSize stride_src, VkDeviceSize stride_dst, VkDeviceSize offset) const
+	{
+		if (bufferMemory.MemoryPropertyFlags() & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT) {
+			void* pData_dst = nullptr;
+			bufferMemory.MapMemory(pData_dst, stride_dst * elementCount, offset);
+			for (size_t i = 0; i < elementCount; i++)
+				memcpy(stride_dst * i + static_cast<uint8_t*>(pData_dst), stride_src * i + static_cast<const uint8_t*>(pData_src), size_t(elementSize));
+			bufferMemory.UnMapMemory(elementCount * stride_dst, offset);
+			return;
+		}
+		StagingBuffer_MainThread::SynchronizeData(pData_src, stride_src * elementCount);
+		auto& commandBuffer =VulkanPlus::Plus().CommandBuffer_Transfer();
+		commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+		std::unique_ptr<VkBufferCopy[]> regions = std::make_unique<VkBufferCopy[]>(elementCount);
+		for (size_t i = 0; i < elementCount; i++)
+			regions[i] = { stride_src * i, stride_dst * i + offset, elementSize };
+		vkCmdCopyBuffer(commandBuffer, StagingBuffer_MainThread::Main(), bufferMemory.Buffer(), elementCount, regions.get());
+		commandBuffer.End();
+		VulkanPlus::Plus().ExecuteCommandBuffer_Graphics(commandBuffer);
+	}
+
 	void DeviceLocalBuffer::Create(VkDeviceSize size, VkBufferUsageFlags desiredUsages_without_transfer_dst)
 	{
 		VkBufferCreateInfo createInfo = {

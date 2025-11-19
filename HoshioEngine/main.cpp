@@ -51,11 +51,11 @@ int main() {
 			//	std::make_unique<TestModel>("test/TestModel/Resource/Models/backpack/backpack.obj");
 			//test_model->Init();
 
-			//std::unique_ptr<RenderNode> testPBR = std::make_unique<TestPBR>();
-			//testPBR->Init();
+			std::unique_ptr<RenderNode> testPBR = std::make_unique<TestPBR>();
+			testPBR->Init();
 			
-			std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
-			testCubeMap->Init();
+			//std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
+			//testCubeMap->Init();
 
 			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<CurvePanel>());
 
@@ -69,7 +69,7 @@ int main() {
 
 				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				testCubeMap->Render();
+				testPBR->Render();
 
 				commandBuffer.End();
 
