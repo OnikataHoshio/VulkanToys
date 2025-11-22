@@ -891,7 +891,7 @@ namespace HoshioEngine {
 
 
 #pragma region CubeAttachment
-	VkImageView CubeAttachment::ImageView(uint32_t layerLevel) const
+	VkImageView CubeAttachment::ImageView(uint32_t layerLevel, uint32_t mipLevel) const
 	{
 		if (imageViews.empty()) 
 		{
@@ -905,7 +905,13 @@ namespace HoshioEngine {
 			std::cout << std::format("[CubeAttachment]WARNING::layerLevel is larger than the max layer level 6 of cube map attachment!Automatically clamped!");
 		}
 
-		return imageViews[layerLevel];
+		if (mipLevel >= mipLevelCount)
+		{
+			mipLevel = mipLevelCount - 1;
+			std::cout << std::format("[CubeAttachment]WARNING::MipLevel is larger than the max mip level  of cube map attachment!Automatically clamped!");
+		}
+
+		return imageViews[mipLevel][layerLevel];
 	}
 
 	VkImageView CubeAttachment::BaseMipImageView() const
@@ -918,7 +924,7 @@ namespace HoshioEngine {
 		return baseMipImageView.Address();
 	}
 
-	const VkImageView* CubeAttachment::AddressOfImageView(uint32_t layerLevel) const
+	const VkImageView* CubeAttachment::AddressOfImageView(uint32_t layerLevel, uint32_t mipLevel) const
 	{
 		if (imageViews.empty())
 		{
@@ -932,10 +938,16 @@ namespace HoshioEngine {
 			std::cout << std::format("[CubeAttachment]WARNING::layerLevel is larger than the max layer level 6 of cube map attachment!Automatically clamped!");
 		}
 
-		return imageViews[layerLevel].Address();
+		if (mipLevel >= mipLevelCount)
+		{
+			mipLevel = mipLevelCount - 1;
+			std::cout << std::format("[CubeAttachment]WARNING::MipLevel is larger than the max mip level  of cube map attachment!Automatically clamped!");
+		}
+
+		return imageViews[mipLevel][layerLevel].Address();
 	}
 
-	VkDescriptorImageInfo CubeAttachment::DescriptorImageInfo(VkSampler sampler, uint32_t layerLevel) const
+	VkDescriptorImageInfo CubeAttachment::DescriptorImageInfo(VkSampler sampler, uint32_t layerLevel, uint32_t mipLevel) const
 	{
 		if (imageViews.empty())
 		{
@@ -948,7 +960,14 @@ namespace HoshioEngine {
 			layerLevel = 5;
 			std::cout << std::format("[CubeAttachment]WARNING::layerLevel is larger than the max layer level 6 of cube map attachment!Automatically clamped!");
 		}
-		return  VkDescriptorImageInfo{ sampler, imageViews[layerLevel], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL };
+
+		if (mipLevel >= mipLevelCount)
+		{
+			mipLevel = mipLevelCount - 1;
+			std::cout << std::format("[CubeAttachment]WARNING::MipLevel is larger than the max mip level  of cube map attachment!Automatically clamped!");
+		}
+
+		return  VkDescriptorImageInfo{ sampler, imageViews[mipLevel][layerLevel], VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 	}
 
 	VkDescriptorImageInfo CubeAttachment::BaseMipDescriptorImageInfo(VkSampler sampler) const
@@ -997,9 +1016,14 @@ namespace HoshioEngine {
 
 		imageViewCreateInfo.subresourceRange.layerCount = 1;
 		imageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		for (uint32_t i = 0; i < 6; i++) {
-			imageViewCreateInfo.subresourceRange.baseArrayLayer = i;
-			imageViews.emplace_back(imageViewCreateInfo);
+		imageViews.resize(mipLevelCount);
+		for (uint32_t i = 0; i < mipLevelCount; i++) {
+			imageViews[i].resize(6);
+			imageViewCreateInfo.subresourceRange.baseMipLevel = i;
+			for (uint32_t j = 0; j < 6; j++) {
+				imageViewCreateInfo.subresourceRange.baseArrayLayer = j;
+				imageViews[i][j].Create(imageViewCreateInfo);
+			}
 		}
 
 	}

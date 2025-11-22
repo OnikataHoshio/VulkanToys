@@ -17,8 +17,11 @@ public:
 	int framebuffers_id = M_INVALID_ID;
 
 	int cubemap_id = M_INVALID_ID;
+	int hdri_id = M_INVALID_ID;
 
 	CubeAttachment cubeAttachment;
+	CubeAttachment envAttachment;
+	CubeAttachment envPrefilterAttachment;
 
 	struct CubemapUniform {
 		glm::mat4 model = {};
@@ -59,6 +62,12 @@ private:
 	void RecordCommandBuffer() override;
 
 	void SendDataToNextNode() override;
+
+	void CmdCopyCubeMap();
+
+	void CmdTransferHDRIToCubeMap();
+
+	void CmdEnvPrefilter();
 
 	//------------
 };

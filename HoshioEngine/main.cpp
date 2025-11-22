@@ -26,7 +26,6 @@ int main() {
 		Texture2D& texture = VulkanPlus::Plus().GetTexture2D("test").second[0];
 		Texture2D bg("res/images/kayoko-bg.png", VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, true);
 
-
 		Sampler& sampler_linear = VulkanPlus::Plus().CreateSampler("sampler_linear", Sampler::SamplerCreateInfo()).second[0];
 
 		TimestampQueries timestampQueries(7);
@@ -51,11 +50,11 @@ int main() {
 			//	std::make_unique<TestModel>("test/TestModel/Resource/Models/backpack/backpack.obj");
 			//test_model->Init();
 
-			std::unique_ptr<RenderNode> testPBR = std::make_unique<TestPBR>();
-			testPBR->Init();
+			//std::unique_ptr<RenderNode> testPBR = std::make_unique<TestPBR>();
+			//testPBR->Init();
 			
-			//std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
-			//testCubeMap->Init();
+			std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
+			testCubeMap->Init();
 
 			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<CurvePanel>());
 
@@ -69,7 +68,7 @@ int main() {
 
 				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				testPBR->Render();
+				testCubeMap->Render();
 
 				commandBuffer.End();
 

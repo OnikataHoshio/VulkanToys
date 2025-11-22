@@ -8,5 +8,8 @@ layout(set = 0,binding = 1) uniform samplerCube skybox;
 
 void main()
 {    
-    FragColor = texture(skybox, TexCoords);
+    vec3 color = texture(skybox, TexCoords).rgb;
+    color = color/(color + vec3(1.0));
+    color = pow(color, vec3(1.0/2.2));
+    FragColor = vec4(color, 1.0);
 }

@@ -118,7 +118,9 @@ float G_Schlick(vec3 v, vec3 n, float k)
 
 float G_Smith(vec3 LightDir, vec3 ViewDir, vec3 NormDir, float Roughness)
 {
-    float k = ((Roughness + 1) * (Roughness + 1)) / 8.0;
+    float Alpha = Roughness * Roughness;
+    float Alpha2 = Alpha * Alpha;
+    float k = ((Alpha2 + 1) * (Alpha2 + 1)) / 8.0;
 
     return G_Schlick(LightDir, NormDir, k) * G_Schlick(ViewDir, NormDir, k);
 }

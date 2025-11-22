@@ -11,6 +11,6 @@ layout(set = 0,binding = 0) uniform u_Transform{
 
 void main()
 {
-    TexCoords = vec3(aPos.x, aPos.y, aPos.z);
+    TexCoords = vec3(aPos.x, aPos.y, -aPos.z);
     gl_Position = proj * view * model * vec4(aPos, 1.0);
 }

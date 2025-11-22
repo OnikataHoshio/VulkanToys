@@ -45,7 +45,7 @@ namespace HoshioEngine {
 		if (rotation.x > 89.0f)
 			rotation.x = 89.0f;
 		if (rotation.x < -89.0f)
-			rotation.x = 89.0f;
+			rotation.x = -89.0f;
 
 		UpdateCameraData();
 	}

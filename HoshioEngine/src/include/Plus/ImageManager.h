@@ -171,11 +171,11 @@ namespace HoshioEngine {
 		Attachment::AddressOfImageView;
 		Attachment::DescriptorImageInfo;
 
-		VkImageView ImageView(uint32_t layerLevel) const;
+		VkImageView ImageView(uint32_t layerLevel, uint32_t mipLevel = 0) const;
 		VkImageView BaseMipImageView() const;
 		const VkImageView* AddressOfBaseMipImageView() const;
-		const VkImageView* AddressOfImageView(uint32_t layerLevel) const;
-		VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, uint32_t layerLevel) const;
+		const VkImageView* AddressOfImageView(uint32_t layerLevel, uint32_t mipLevel = 0) const;
+		VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler, uint32_t layerLevel, uint32_t mipLevel = 0) const;
 		VkDescriptorImageInfo BaseMipDescriptorImageInfo(VkSampler sampler) const;
 		uint32_t MipLevelCount() const;
 
@@ -189,7 +189,7 @@ namespace HoshioEngine {
 
 	private:
 		uint32_t mipLevelCount = 1;
-		std::vector<HoshioEngine::ImageView> imageViews;
+		std::vector<std::vector<HoshioEngine::ImageView>> imageViews;
 		HoshioEngine::ImageView baseMipImageView;
 	};
 

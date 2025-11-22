@@ -155,7 +155,7 @@ namespace HoshioEngine {
 		if (imgBarrier_to.isNeeded)
 			CmdImagePipelineBarrier(commandBuffer, image,
 				VkImageSubresourceRange{ VK_IMAGE_ASPECT_COLOR_BIT, 0, mipLevelCount, 0, layerCount },
-				ImageBarrierInfo{ VK_PIPELINE_STAGE_TRANSFER_BIT, 0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL },
+				ImageBarrierInfo{ VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL },
 				imgBarrier_to);
 	}
 
