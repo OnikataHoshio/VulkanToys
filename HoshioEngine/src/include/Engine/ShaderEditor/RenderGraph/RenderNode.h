@@ -36,10 +36,6 @@ namespace HoshioEngine {
 		virtual void SendDataToNextNode() = 0;
 
 	public:
-
-		static TimestampQueries* pTimestampQueries;
-		static uint32_t timestampCounter;
-
 		RenderNode();
 		virtual ~RenderNode() = default;
 		virtual void ImguiRender() = 0;

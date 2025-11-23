@@ -14,7 +14,7 @@ namespace HoshioEngine
 
 	class RenderGraph
 	{
-	private:
+	protected:
 		bool hasBeenInit = false;
 		std::unique_ptr<RenderNode> preframeNode;
 		std::unique_ptr<RenderNode> precomputeNode;
@@ -27,6 +27,7 @@ namespace HoshioEngine
 		TimestampQueries precomputeTimestampQueries;
 	public:
 		RenderGraph();
+		virtual ~RenderGraph() = default;
 		RenderGraph* InitRenderGraph();
 		RenderGraph* ConnectRenderNode(uint32_t originalNodeID, uint32_t connectedNodeID, RENDER_NODE_TYPE nodeType);
 		//void ConnectRenderNode(std::string originalNodeName, std::string connectedNodeName, RENDER_NODE_TYPE nodeType);
@@ -35,7 +36,7 @@ namespace HoshioEngine
 		RenderGraph* Render();
 		RenderGraph* ExecutePrecompute();
 
-	private:
+	protected:
 		RenderNode* CheckNodeIdRange(uint32_t nodeID, RENDER_NODE_TYPE nodeType) const;
 		void Render_Internal();
 		void ExecutePrecompute_Internal();

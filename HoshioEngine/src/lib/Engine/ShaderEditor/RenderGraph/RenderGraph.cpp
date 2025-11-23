@@ -10,23 +10,27 @@ namespace HoshioEngine
 
 	RenderGraph* RenderGraph::InitRenderGraph()
 	{
-		RenderNode* renderNode = preframeNode.get();
-		while (renderNode != nullptr)
+		if (!hasBeenInit)
 		{
-			renderNode->Init();
-			renderNode = renderNode->NextNode();
+			RenderNode* renderNode = preframeNode.get();
+			while (renderNode != nullptr)
+			{
+				renderNode->Init();
+				renderNode = renderNode->NextNode();
+			}
+
+			renderNode = precomputeNode.get();
+			while (renderNode != nullptr)
+			{
+				renderNode->Init();
+				renderNode = renderNode->NextNode();
+			}
+
+			preframeTimestampQueries.Create(preframeNodeBuffer.size() + 1);
+			precomputeTimestampQueries.Create(precomputeNodeBuffer.size() + 1);
+
+			hasBeenInit = true;
 		}
-
-		renderNode = precomputeNode.get();
-		while (renderNode != nullptr)
-		{
-			renderNode->Init();
-			renderNode = renderNode->NextNode();
-		}
-
-		preframeTimestampQueries.Create(preframeNodeBuffer.size() + 1);
-		precomputeTimestampQueries.Create(precomputeNodeBuffer.size() + 1);
-
 		return this;
 	}
 

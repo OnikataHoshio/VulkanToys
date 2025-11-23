@@ -34,10 +34,9 @@ float G_Schlick(vec3 v, vec3 n, float k)
 
 float G_Smith(vec3 LightDir, vec3 ViewDir, vec3 NormDir, float Roughness)
 {
-    float Alpha = Roughness * Roughness;
-    float Alpha2 = Alpha * Alpha;
+    float Alpha = Roughness;
 
-    float k = Alpha2 * Alpha2 / 2.0;
+    float k = Alpha * Alpha / 2.0;
 
     return G_Schlick(LightDir, NormDir, k) * G_Schlick(ViewDir, NormDir, k);
 }
@@ -47,8 +46,8 @@ vec3 ImportanceSampleGGX(vec2 Xi, vec3 N, float Roughness)
     float a = Roughness * Roughness;
 
     float phi = 2.0 * PI * Xi.x;
-    float cosTheta = sqrt((1-Xi.y)/(1+(a * a -1)*Xi.y));
-    float sinTheta = sqrt(1-cosTheta*cosTheta);
+    float cosTheta = sqrt((1.0 - Xi.y) / (1.0 + (a*a - 1.0) * Xi.y));
+    float sinTheta = sqrt(1.0 - cosTheta*cosTheta);
 
     vec3 H;
 
@@ -82,7 +81,7 @@ vec2 Hammersley(uint i, uint N)
 vec2 IntegratedBRDF(float NdotV, float Roughness)
 {
     vec3 V;
-    V.x = sqrt(1 - NdotV * NdotV);
+    V.x = sqrt(1.0 - NdotV * NdotV);
     V.y = 0.0;
     V.z = NdotV;
 
@@ -92,7 +91,7 @@ vec2 IntegratedBRDF(float NdotV, float Roughness)
     vec3 N = vec3(0.0, 0.0, 1.0);
 
     const uint SampleCount = 1024u;
-    for(uint i = 0; i < SampleCount; i++)
+    for(uint i = 0u; i < SampleCount; i++)
     {
         vec2 Xi = Hammersley(i, SampleCount);
         vec3 H = ImportanceSampleGGX(Xi, N, Roughness);
@@ -111,11 +110,9 @@ vec2 IntegratedBRDF(float NdotV, float Roughness)
             A += (1.0 - Fc) * G_Vis;
             B += Fc * G_Vis;
         }
-
-
     }
-    A /= SampleCount;
-    B /= SampleCount;
+    A /= float(SampleCount);
+    B /= float(SampleCount);
 
     return vec2(A, B);
 

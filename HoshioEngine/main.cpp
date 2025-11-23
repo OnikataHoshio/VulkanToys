@@ -2,6 +2,7 @@
 #include "Wins/GlfwManager.h"
 
 #include "Engine/ShaderEditor/RenderGraph/DrawScreenNode.h"
+#include "Engine/ShaderEditor/RenderGraph/RenderGraph.h"
 #include "Engine/Panel/Editor/EditorGUIManager.h"
 #include "Engine/Panel/Editor/EditorInspectorPanel.h"
 #include "test/SimplePathTrace/SimplePathTrace.h"
@@ -10,6 +11,7 @@
 #include "test/TestCurve/CurvePanel.h"
 #include "test/TestPBR/TestPBR.h"
 #include "test/TestPBR/TestCubeMap.h"
+#include "test/TestPBR/PBRPrecompute.h"
 using namespace HoshioEngine;
 
 int main() {
@@ -28,10 +30,8 @@ int main() {
 
 		Sampler& sampler_linear = VulkanPlus::Plus().CreateSampler("sampler_linear", Sampler::SamplerCreateInfo()).second[0];
 
-		TimestampQueries timestampQueries(7);
-		RenderNode::pTimestampQueries = &timestampQueries;
-		
 		const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
+
 
 		{
 			std::unique_ptr<RenderNode> drawScreenNode =
@@ -56,6 +56,12 @@ int main() {
 			std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
 			testCubeMap->Init();
 
+			std::unique_ptr<RenderNode> preBRDF = std::make_unique<PBRPrecomputeNode>();
+			preBRDF->Init();
+
+			dynamic_cast<DrawScreenNode*>(drawScreenNode.get())->SetSampledImage(
+				&dynamic_cast<PBRPrecomputeNode*>(preBRDF.get())->preBRDFTexture);
+
 			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<CurvePanel>());
 
 			while (!glfwWindowShouldClose(GlfwWindow::pWindow)) {
@@ -68,7 +74,7 @@ int main() {
 
 				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				testCubeMap->Render();
+				drawScreenNode->Render();
 
 				commandBuffer.End();
 
@@ -92,6 +98,8 @@ int main() {
 	}
 	return 0;
 }
+
+
 
 
 

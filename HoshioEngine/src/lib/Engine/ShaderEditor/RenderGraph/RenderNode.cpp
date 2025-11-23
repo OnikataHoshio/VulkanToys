@@ -1,10 +1,6 @@
 #include "Engine/ShaderEditor/RenderGraph/RenderNode.h"
 
 namespace HoshioEngine {
-	TimestampQueries* RenderNode::pTimestampQueries = nullptr;
-
-	uint32_t RenderNode::timestampCounter = 0;
-
 	RenderNode& RenderNode::Init(){
 		InitResource();
 		CreateSampler();

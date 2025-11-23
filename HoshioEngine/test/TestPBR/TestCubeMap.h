@@ -7,7 +7,6 @@ using namespace HoshioEngine;
 
 class TestCubeMap : public RenderNode {
 public:
-
 	int pipeline_id = M_INVALID_ID;
 	int pipeline_layout_id = M_INVALID_ID;
 	int renderpass_id = M_INVALID_ID;
@@ -22,6 +21,7 @@ public:
 	CubeAttachment cubeAttachment;
 	CubeAttachment envAttachment;
 	CubeAttachment envPrefilterAttachment;
+
 
 	struct CubemapUniform {
 		glm::mat4 model = {};
