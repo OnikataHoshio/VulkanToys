@@ -4,8 +4,6 @@
 #include "Engine/ShaderEditor/RenderGraph/RenderNode.h"
 
 namespace HoshioEngine {
-	
-
 	class DrawScreenNode : public RenderNode {
 	public:
 

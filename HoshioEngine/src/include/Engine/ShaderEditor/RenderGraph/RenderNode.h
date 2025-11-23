@@ -39,11 +39,6 @@ namespace HoshioEngine {
 
 		static TimestampQueries* pTimestampQueries;
 		static uint32_t timestampCounter;
-		static int testCounter;
-		static int maxTestTimes;
-		static bool isTesting;
-
-		bool isFirstNode = false;
 
 		RenderNode();
 		virtual ~RenderNode() = default;
