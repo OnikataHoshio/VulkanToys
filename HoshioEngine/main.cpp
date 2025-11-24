@@ -9,9 +9,10 @@
 #include "test/Test3D/Test3D.h"
 #include "test/TestModel/TestModel.h"
 #include "test/TestCurve/CurvePanel.h"
-#include "test/TestPBR/TestPBR.h"
+#include "test/TestPBR/PBR.h"
 #include "test/TestPBR/TestCubeMap.h"
 #include "test/TestPBR/PBRPrecompute.h"
+#include "test/TestPBR/PBRRenderGraph.h"
 using namespace HoshioEngine;
 
 int main() {
@@ -53,14 +54,17 @@ int main() {
 			//std::unique_ptr<RenderNode> testPBR = std::make_unique<TestPBR>();
 			//testPBR->Init();
 			
-			std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
-			testCubeMap->Init();
+			//std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
+			//testCubeMap->Init();
 
-			std::unique_ptr<RenderNode> preBRDF = std::make_unique<PBRPrecomputeNode>();
-			preBRDF->Init();
+			//std::unique_ptr<RenderNode> preBRDF = std::make_unique<PBRPrecomputeNode>();
+			//preBRDF->Init();
 
-			dynamic_cast<DrawScreenNode*>(drawScreenNode.get())->SetSampledImage(
-				&dynamic_cast<PBRPrecomputeNode*>(preBRDF.get())->preBRDFTexture);
+			//dynamic_cast<DrawScreenNode*>(drawScreenNode.get())->SetSampledImage(
+			//	&dynamic_cast<PBRPrecomputeNode*>(preBRDF.get())->kullaContyTexture);
+
+			PBRRenderGraph pbrRenderGraph;
+			pbrRenderGraph.ExecutePrecompute();
 
 			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<CurvePanel>());
 
@@ -74,7 +78,7 @@ int main() {
 
 				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				drawScreenNode->Render();
+				pbrRenderGraph.Render();
 
 				commandBuffer.End();
 

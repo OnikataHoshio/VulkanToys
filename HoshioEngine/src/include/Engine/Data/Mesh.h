@@ -25,6 +25,8 @@ namespace HoshioEngine {
 		int sampler_id = M_INVALID_ID;
 		int sampler_set_layout_id = M_INVALID_ID;
 		int uniform_set_layout_id = M_INVALID_ID;
+
+		int instance_count = 1;
 	};
 
 	class Mesh {

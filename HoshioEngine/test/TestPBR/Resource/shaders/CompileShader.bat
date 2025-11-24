@@ -14,8 +14,10 @@ F:/dev/vulkan/vulkanSDK/1.4.304.1/Bin/glslc.exe GLSL/CylinderMap.vert -o SPIR-V/
 
 F:/dev/vulkan/vulkanSDK/1.4.304.1/Bin/glslc.exe GLSL/CylinderMap.frag -o SPIR-V/CylinderMap.frag.spv
 
-F:/dev/vulkan/vulkanSDK/1.4.304.1/Bin/glslc.exe GLSL/PreBRDF.vert -o SPIR-V/PreBRDF.vert.spv
+F:/dev/vulkan/vulkanSDK/1.4.304.1/Bin/glslc.exe GLSL/Default.vert -o SPIR-V/Default.vert.spv
 
 F:/dev/vulkan/vulkanSDK/1.4.304.1/Bin/glslc.exe GLSL/PreBRDF.frag -o SPIR-V/PreBRDF.frag.spv
+
+F:/dev/vulkan/vulkanSDK/1.4.304.1/Bin/glslc.exe GLSL/KullaConty.frag -o SPIR-V/KullaConty.frag.spv
 
 pause

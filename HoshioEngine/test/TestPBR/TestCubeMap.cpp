@@ -715,11 +715,7 @@ void TestCubeMap::CmdEnvPrefilter()
 					VulkanPlus::Plus().ExecuteCommandBuffer_Graphics(commandBuffer);
 				}
 			}
-
-
-
 		}
-
 	}
 
 

@@ -10,6 +10,7 @@ namespace HoshioEngine {
 		CubeAttachment envAttachment;
 		CubeAttachment envPrefilterAttachment;
 		ColorAttachment preBRDFTexture;
+		ColorAttachment kullaContyTexture;
 		Texture2D hdrImage;
 
 	private:
@@ -61,6 +62,8 @@ namespace HoshioEngine {
 		void CmdEnvPrefilter();
 
 		void CmdPrecomputeBRDF();
+
+		void CmdKullaConty();
 	};
 }
 

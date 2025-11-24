@@ -22,7 +22,6 @@ public:
 	CubeAttachment envAttachment;
 	CubeAttachment envPrefilterAttachment;
 
-
 	struct CubemapUniform {
 		glm::mat4 model = {};
 		glm::mat4 view = {};

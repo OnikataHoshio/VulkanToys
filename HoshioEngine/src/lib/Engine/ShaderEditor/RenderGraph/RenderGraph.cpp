@@ -26,14 +26,14 @@ namespace HoshioEngine
 				renderNode = renderNode->NextNode();
 			}
 
-			preframeTimestampQueries.Create(preframeNodeBuffer.size() + 1);
-			precomputeTimestampQueries.Create(precomputeNodeBuffer.size() + 1);
+			CreateTimestampQueries();
 
 			hasBeenInit = true;
 		}
 		return this;
 	}
 
+	/*
 	RenderGraph* RenderGraph::ConnectRenderNode(uint32_t originalNodeID, uint32_t connectedNodeID, RENDER_NODE_TYPE nodeType)
 	{
 		RenderNode* originalNode = CheckNodeIdRange(originalNodeID, nodeType);
@@ -61,30 +61,6 @@ namespace HoshioEngine
 		return this;
 	}
 
-	RenderGraph* RenderGraph::Render()
-	{
-		const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
-		preframeTimestampQueries.Reset(commandBuffer);
-		preframeTimestampCounter = 0;
-
-		Render_Internal();
-
-		preframeTimestampQueries.WriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, preframeTimestampCounter++);
-		
-		return this;
-	}
-
-	RenderGraph* RenderGraph::ExecutePrecompute()
-	{
-		const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
-		precomputeTimestampQueries.Reset(commandBuffer);
-		precomputeTimestampCounter = 0;
-
-		ExecutePrecompute_Internal();
-
-		precomputeTimestampQueries.WriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, precomputeTimestampCounter++);
-		return this;
-	}
 
 	RenderNode* RenderGraph::CheckNodeIdRange(uint32_t nodeID, RENDER_NODE_TYPE nodeType) const
 	{
@@ -113,6 +89,32 @@ namespace HoshioEngine
 			return precomputeNodeBuffer[nodeID].get();
 		}
 	}
+	*/
+
+	RenderGraph* RenderGraph::Render()
+	{
+		const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
+		preframeTimestampQueries.Reset(commandBuffer);
+		preframeTimestampCounter = 0;
+
+		Render_Internal();
+
+		preframeTimestampQueries.WriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, preframeTimestampCounter++);
+
+		return this;
+	}
+
+	RenderGraph* RenderGraph::ExecutePrecompute()
+	{
+		const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
+		//precomputeTimestampQueries.Reset(commandBuffer);
+		//precomputeTimestampCounter = 0;
+
+		ExecutePrecompute_Internal();
+
+		//precomputeTimestampQueries.WriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, precomputeTimestampCounter++);
+		return this;
+	}
 
 	void RenderGraph::Render_Internal()
 	{
@@ -138,12 +140,18 @@ namespace HoshioEngine
 
 		while (node != nullptr)
 		{
-			precomputeTimestampQueries.WriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, precomputeTimestampCounter++);
+		//  precomputeTimestampQueries.WriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, precomputeTimestampCounter++);
 
 			node->Render();
 
 			node = node->NextNode();
 		}
+	}
+
+	void RenderGraph::CreateTimestampQueries()
+	{
+		preframeTimestampQueries.Create(16);
+		precomputeTimestampQueries.Create(16);
 	}
 
 }

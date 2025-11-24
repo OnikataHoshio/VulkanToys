@@ -30,9 +30,9 @@ namespace HoshioEngine {
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
 				2, 1, uniform_set.Address(), 0, nullptr);
 		if(!indices.empty())
-			vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
+			vkCmdDrawIndexed(commandBuffer, indices.size(), shader_info.instance_count, 0, 0, 0);
 		else
-			vkCmdDraw(commandBuffer, vertices.size(), 1, 0, 0);
+			vkCmdDraw(commandBuffer, vertices.size(), shader_info.instance_count, 0, 0);
 	}
 
 	std::vector<float> Mesh::ReorganizeVertexData()

@@ -21,25 +21,27 @@ namespace HoshioEngine
 		uint32_t preframeTimestampCounter = 0;
 		uint32_t precomputeTimestampCounter = 0;
 	public:
-		std::vector<std::unique_ptr<RenderNode>> preframeNodeBuffer;
-		std::vector<std::unique_ptr<RenderNode>> precomputeNodeBuffer;
+		//std::vector<std::unique_ptr<RenderNode>> preframeNodeBuffer;
+		//std::vector<std::unique_ptr<RenderNode>> precomputeNodeBuffer;
 		TimestampQueries preframeTimestampQueries;
 		TimestampQueries precomputeTimestampQueries;
 	public:
 		RenderGraph();
 		virtual ~RenderGraph() = default;
-		RenderGraph* InitRenderGraph();
-		RenderGraph* ConnectRenderNode(uint32_t originalNodeID, uint32_t connectedNodeID, RENDER_NODE_TYPE nodeType);
+		virtual RenderGraph* InitRenderGraph();
+		//RenderGraph* ConnectRenderNode(uint32_t originalNodeID, uint32_t connectedNodeID, RENDER_NODE_TYPE nodeType);
 		//void ConnectRenderNode(std::string originalNodeName, std::string connectedNodeName, RENDER_NODE_TYPE nodeType);
-		RenderGraph* DisconnectRenderNode(uint32_t originalNodeID, uint32_t connectedNodeID, RENDER_NODE_TYPE nodeType);
+		//RenderGraph* DisconnectRenderNode(uint32_t originalNodeID, uint32_t connectedNodeID, RENDER_NODE_TYPE nodeType);
 		//void DisconnectRenderNode(std::string originalNodeName, std::string connectedNodeName, RENDER_NODE_TYPE nodeType);
-		RenderGraph* Render();
-		RenderGraph* ExecutePrecompute();
+		virtual RenderGraph* Render();
+		virtual RenderGraph* ExecutePrecompute();
 
 	protected:
-		RenderNode* CheckNodeIdRange(uint32_t nodeID, RENDER_NODE_TYPE nodeType) const;
-		void Render_Internal();
-		void ExecutePrecompute_Internal();
+		//RenderNode* CheckNodeIdRange(uint32_t nodeID, RENDER_NODE_TYPE nodeType) const;
+		virtual void Render_Internal();
+		virtual void ExecutePrecompute_Internal();
+		virtual void CreateTimestampQueries();
+
 	};
 
 }

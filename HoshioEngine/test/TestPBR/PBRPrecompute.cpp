@@ -5,7 +5,7 @@ namespace HoshioEngine
 {
 	void PBRPrecomputeNode::InitResource()
 	{
-		const char* const hdri_path = "test/TestPBR/Resource/images/hdr-bg.hdr";
+		const char* const hdri_path = "test/TestPBR/Resource/images/hdr-bg2.hdr";
 		hdrImage.Create(hdri_path, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, false);
 	}
 
@@ -114,6 +114,7 @@ namespace HoshioEngine
 		CmdTransferHDRIToCubeMap();
 		CmdEnvPrefilter();
 		CmdPrecomputeBRDF();
+		CmdKullaConty(); 
 	}
 
 	void PBRPrecomputeNode::UpdateDescriptorSets()
@@ -521,7 +522,7 @@ namespace HoshioEngine
 		};
 		PipelineLayout pipeline_layout(pipelineLayoutCreateInfo);
 
-		ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/PreBRDF.vert.spv");
+		ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/Default.vert.spv");
 		ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/PreBRDF.frag.spv");
 		PipelineConfigurator configurator;
 		configurator.PipelineLayout(pipeline_layout)
@@ -562,6 +563,135 @@ namespace HoshioEngine
 			VulkanPlus::Plus().ExecuteCommandBuffer_Graphics(commandBuffer);
 		}
 
+	}
+
+	void PBRPrecomputeNode::CmdKullaConty()
+	{
+		const VkExtent2D envExtent = VkExtent2D{ 512, 512 };
+
+		kullaContyTexture.Create(VK_FORMAT_R16_SFLOAT, envExtent, false, 1u, VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_SAMPLED_BIT);
+
+		VkAttachmentDescription attachmentDescription = {
+			.format = VK_FORMAT_R16_SFLOAT,
+			.samples = VK_SAMPLE_COUNT_1_BIT,
+			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		};
+
+		VkAttachmentReference attachmentReference = {
+			.attachment = 0,
+			.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		};
+
+		VkSubpassDescription subpassDescription = {
+			.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+			.colorAttachmentCount = 1,
+			.pColorAttachments = &attachmentReference,
+		};
+		VkSubpassDependency subpassDependency = {
+			.srcSubpass = VK_SUBPASS_EXTERNAL,
+			.dstSubpass = 0,
+			.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+			.dstAccessMask = VK_ACCESS_SHADER_READ_BIT
+		};
+
+		VkRenderPassCreateInfo renderPassCreateInfo = {
+			.attachmentCount = 1,
+			.pAttachments = &attachmentDescription,
+			.subpassCount = 1,
+			.pSubpasses = &subpassDescription,
+			.dependencyCount = 1,
+			.pDependencies = &subpassDependency
+		};
+
+		RenderPass renderpass(renderPassCreateInfo);
+
+		//Create Framebuffer for cube attachment
+		Framebuffer framebuffer;
+		VkFramebufferCreateInfo framebufferCreateInfo = {
+			.renderPass = renderpass,
+			.attachmentCount = 1,
+			.width = envExtent.width,
+			.height = envExtent.height,
+			.layers = 1,
+		};
+		framebufferCreateInfo.pAttachments = kullaContyTexture.AddressOfImageView();
+		framebuffer.Create(framebufferCreateInfo);
+
+		//Create write cubemap pipeline
+		VkDescriptorSetLayoutBinding binding = {
+			.binding = 0,
+			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+			.descriptorCount = 1,
+			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+		};
+
+		VkDescriptorSetLayoutCreateInfo createInfo = {
+			.bindingCount = 1,
+			.pBindings = &binding
+		};
+
+		DescriptorSetLayout descriptorSetLayout(createInfo);
+		DescriptorSet descriptorSet;
+		VulkanPlus::Plus().DescriptorPool().AllocateDescriptorSets(descriptorSet, descriptorSetLayout);
+		descriptorSet.Write(preBRDFTexture.DescriptorImageInfo(sampler), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+
+		VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
+			.setLayoutCount = 1,
+			.pSetLayouts = descriptorSetLayout.Address(),
+		};
+
+		PipelineLayout pipeline_layout(pipelineLayoutCreateInfo);
+
+		ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/Default.vert.spv");
+		ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/KullaConty.frag.spv");
+		PipelineConfigurator configurator;
+		configurator.PipelineLayout(pipeline_layout)
+			.RenderPass(renderpass)
+			.AddVertexInputBindings(0, sizeof(DefaultVertex), VK_VERTEX_INPUT_RATE_VERTEX)
+			.AddVertexInputAttribute(0, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(DefaultVertex, position))
+			.AddVertexInputAttribute(1, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(DefaultVertex, texCoord))
+			.PrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+			.AddViewport(0.0f, 0.0f,
+				envExtent.width, envExtent.height,
+				0.0f, 1.0f)
+			.AddScissor(VkOffset2D{}, envExtent)
+			.CullMode(VK_CULL_MODE_NONE)
+			.EnableDepthTest(VK_TRUE, VK_TRUE)
+			.RasterizationSamples(VK_SAMPLE_COUNT_1_BIT)
+			.AddAttachmentState(0b1111)
+			.AddShaderStage(vertModule.ShaderStageCi(VK_SHADER_STAGE_VERTEX_BIT))
+			.AddShaderStage(fragModule.ShaderStageCi(VK_SHADER_STAGE_FRAGMENT_BIT))
+			.UpdatePipelineCreateInfo();
+		Pipeline pipeline(configurator);
+
+		const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
+		VkRect2D renderArea = { {}, envExtent };
+		VkClearValue clearValue = {
+			.color = { 0.f, 0.f, 0.f, 1.f } ,
+		};
+		VkDeviceSize offset = 0;
+
+		float F0 = 0.04;
+
+		{
+			commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+			renderpass.Begin(commandBuffer, framebuffer, renderArea, clearValue);
+			vkCmdBindVertexBuffers(commandBuffer, 0, 1, VulkanPlus::Plus().DefaultVertexBuffer().Address(), &offset);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout, 0, 1,
+				descriptorSet.Address(), 0, nullptr);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+			vkCmdDraw(commandBuffer, 4, 1, 0, 0);
+			renderpass.End(commandBuffer);
+			commandBuffer.End();
+
+			VulkanPlus::Plus().ExecuteCommandBuffer_Graphics(commandBuffer);
+		}
 	}
 
 	void PBRPrecomputeNode::ImguiRender()
