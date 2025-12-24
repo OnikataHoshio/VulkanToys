@@ -9,10 +9,11 @@
 #include "test/Test3D/Test3D.h"
 #include "test/TestModel/TestModel.h"
 #include "test/TestCurve/CurvePanel.h"
-#include "test/TestPBR/PBR.h"
-#include "test/TestPBR/TestCubeMap.h"
-#include "test/TestPBR/PBRPrecompute.h"
-#include "test/TestPBR/PBRRenderGraph.h"
+#include "test/PBR/PBR.h"
+#include "test/PBR/TestCubeMap.h"
+#include "test/PBR/PBRPrecompute.h"
+#include "test/PBR/PBRRenderGraph.h"
+#include "test/Tessellation/TestTessellation.h"
 using namespace HoshioEngine;
 
 int main() {
@@ -39,32 +40,11 @@ int main() {
 				std::make_unique<DrawScreenNode>(sampler_linear, bg);
 			drawScreenNode->Init();
 
-			//std::unique_ptr<RenderNode> simplePathTrace =
-			//	std::make_unique<SimplePathTrace>(sampler_linear, &texture);
-			//simplePathTrace->Init();
+			TestTesselation testtess;
+			testtess.Init();
 
-			//std::unique_ptr<RenderNode> test3D =
-			//	std::make_unique<Test3D>(sampler_linear);
-			//test3D->Init();
-
-			//std::unique_ptr<RenderNode> test_model =
-			//	std::make_unique<TestModel>("test/TestModel/Resource/Models/backpack/backpack.obj");
-			//test_model->Init();
-
-			//std::unique_ptr<RenderNode> testPBR = std::make_unique<TestPBR>();
-			//testPBR->Init();
-			
-			//std::unique_ptr<RenderNode> testCubeMap = std::make_unique<TestCubeMap>();
-			//testCubeMap->Init();
-
-			//std::unique_ptr<RenderNode> preBRDF = std::make_unique<PBRPrecomputeNode>();
-			//preBRDF->Init();
-
-			//dynamic_cast<DrawScreenNode*>(drawScreenNode.get())->SetSampledImage(
-			//	&dynamic_cast<PBRPrecomputeNode*>(preBRDF.get())->kullaContyTexture);
-
-			PBRRenderGraph pbrRenderGraph;
-			pbrRenderGraph.ExecutePrecompute();
+			//PBRRenderGraph pbrRenderGraph;
+			//pbrRenderGraph.ExecutePrecompute();
 
 			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<CurvePanel>());
 
@@ -78,7 +58,7 @@ int main() {
 
 				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				pbrRenderGraph.Render();
+				testtess.Render();
 
 				commandBuffer.End();
 

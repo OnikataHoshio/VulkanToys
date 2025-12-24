@@ -168,8 +168,8 @@ void HoshioEngine::Skybox::CreatePipelineLayout()
 void HoshioEngine::Skybox::CreatePipeline()
 {
 	auto Create = [&] {
-		static ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/TestCubeMap.vert.spv");
-		static ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/TestCubeMap.frag.spv");
+		static ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/TestCubeMap.vert.spv");
+		static ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/TestCubeMap.frag.spv");
 		PipelineConfigurator configurator;
 
 		configurator.PipelineLayout(pipelineLayout)

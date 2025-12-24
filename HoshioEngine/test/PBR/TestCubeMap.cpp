@@ -4,16 +4,16 @@
 void TestCubeMap::InitResource()
 {
 	const char* const filepaths[6] = {
-		"test/TestPBR/Resource/images/cubemap/right.jpg",   // +X
-		"test/TestPBR/Resource/images/cubemap/left.jpg",    // -X
-		"test/TestPBR/Resource/images/cubemap/top.jpg",     // +Y
-		"test/TestPBR/Resource/images/cubemap/bottom.jpg",  // -Y
-		"test/TestPBR/Resource/images/cubemap/front.jpg",   // -Z
-		"test/TestPBR/Resource/images/cubemap/back.jpg"     // +Z
+		"test/PBR/Resource/images/cubemap/right.jpg",   // +X
+		"test/PBR/Resource/images/cubemap/left.jpg",    // -X
+		"test/PBR/Resource/images/cubemap/top.jpg",     // +Y
+		"test/PBR/Resource/images/cubemap/bottom.jpg",  // -Y
+		"test/PBR/Resource/images/cubemap/front.jpg",   // -Z
+		"test/PBR/Resource/images/cubemap/back.jpg"     // +Z
 	};
 	/*right(+x) left(-x) top(+y) bottom(-y) front(-z) back(+z)*/
 
-	const char* const hdri_path = "test/TestPBR/Resource/images/hdr-bg.hdr";
+	const char* const hdri_path = "test/PBR/Resource/images/hdr-bg.hdr";
 
 	cubemap_id = VulkanPlus::Plus().CreateTextureCube("test-cubemap-cubemap", filepaths, VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, true).first;
 	hdri_id = VulkanPlus::Plus().CreateTexture2D("text-hdr-bg-image", hdri_path, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, false).first;
@@ -128,8 +128,8 @@ void TestCubeMap::CreatePipelineLayout()
 void TestCubeMap::CreatePipeline()
 {
 	auto Create = [&] {
-		static ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/TestCubeMap.vert.spv");
-		static ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/TestCubeMap.frag.spv");
+		static ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/TestCubeMap.vert.spv");
+		static ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/TestCubeMap.frag.spv");
 		PipelineConfigurator configurator;
 
 		PipelineLayout& pipeline_layout = VulkanPlus::Plus().GetPipelineLayout(pipeline_layout_id).second[0];
@@ -317,8 +317,8 @@ void TestCubeMap::CmdCopyCubeMap()
 		//Create write cubemap pipeline
 		PipelineLayout& pipeline_layout = VulkanPlus::Plus().GetPipelineLayout(pipeline_layout_id).second[0];
 
-		ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/TestCubeMap.vert.spv");
-		ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/TestCubeMap.frag.spv");
+		ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/TestCubeMap.vert.spv");
+		ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/TestCubeMap.frag.spv");
 		PipelineConfigurator configurator;
 		configurator.PipelineLayout(pipeline_layout)
 			.RenderPass(renderpass)
@@ -457,8 +457,8 @@ void TestCubeMap::CmdTransferHDRIToCubeMap()
 		//Create write cubemap pipeline
 		PipelineLayout& pipeline_layout = VulkanPlus::Plus().GetPipelineLayout(pipeline_layout_id).second[0];
 
-		ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/CylinderMap.vert.spv");
-		ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/CylinderMap.frag.spv");
+		ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/CylinderMap.vert.spv");
+		ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/CylinderMap.frag.spv");
 		PipelineConfigurator configurator;
 		configurator.PipelineLayout(pipeline_layout)
 			.RenderPass(renderpass)
@@ -625,8 +625,8 @@ void TestCubeMap::CmdEnvPrefilter()
 
 		PipelineLayout pipeline_layout(createInfo);
 
-		ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/EnvPrefilter.vert.spv");
-		ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/EnvPrefilter.frag.spv");
+		ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/EnvPrefilter.vert.spv");
+		ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/EnvPrefilter.frag.spv");
 		std::vector<Pipeline> pipelines(MipLevelCount);
 		for (uint32_t i = 0; i < MipLevelCount; i++)
 		{

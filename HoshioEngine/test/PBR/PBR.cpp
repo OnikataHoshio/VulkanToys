@@ -149,8 +149,8 @@ void PBR::CreatePipelineLayout()
 void PBR::CreatePipeline()
 {
 	auto Create = [&] {
-		static ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/PBR.vert.spv");
-		static ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/PBR.frag.spv");
+		static ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/PBR.vert.spv");
+		static ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/PBR.frag.spv");
 		PipelineConfigurator configurator;
 		std::vector<VertexInputAttribute> vertex_input_attributes = sphere.GetVertexInputeAttributes();
 		uint32_t stride = sphere.GetVertexInputAttributesStride();

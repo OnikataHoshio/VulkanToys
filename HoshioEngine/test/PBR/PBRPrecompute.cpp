@@ -5,7 +5,7 @@ namespace HoshioEngine
 {
 	void PBRPrecomputeNode::InitResource()
 	{
-		const char* const hdri_path = "test/TestPBR/Resource/images/hdr-bg2.hdr";
+		const char* const hdri_path = "test/PBR/Resource/images/hdr-bg2.hdr";
 		hdrImage.Create(hdri_path, VK_FORMAT_R32G32B32A32_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, false);
 	}
 
@@ -199,8 +199,8 @@ namespace HoshioEngine
 			};
 			PipelineLayout pipeline_layout(pipelineLayoutCreateInfo);
 
-			ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/CylinderMap.vert.spv");
-			ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/CylinderMap.frag.spv");
+			ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/CylinderMap.vert.spv");
+			ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/CylinderMap.frag.spv");
 			PipelineConfigurator configurator;
 			configurator.PipelineLayout(pipeline_layout)
 				.RenderPass(renderpass)
@@ -365,8 +365,8 @@ namespace HoshioEngine
 
 			PipelineLayout pipeline_layout(pipelineCreateInfo);
 
-			ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/EnvPrefilter.vert.spv");
-			ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/EnvPrefilter.frag.spv");
+			ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/EnvPrefilter.vert.spv");
+			ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/EnvPrefilter.frag.spv");
 			std::vector<Pipeline> pipelines(MipLevelCount);
 			for (uint32_t i = 0; i < MipLevelCount; i++)
 			{
@@ -522,8 +522,8 @@ namespace HoshioEngine
 		};
 		PipelineLayout pipeline_layout(pipelineLayoutCreateInfo);
 
-		ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/Default.vert.spv");
-		ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/PreBRDF.frag.spv");
+		ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/Default.vert.spv");
+		ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/PreBRDF.frag.spv");
 		PipelineConfigurator configurator;
 		configurator.PipelineLayout(pipeline_layout)
 			.RenderPass(renderpass)
@@ -648,8 +648,8 @@ namespace HoshioEngine
 
 		PipelineLayout pipeline_layout(pipelineLayoutCreateInfo);
 
-		ShaderModule vertModule("test/TestPBR/Resource/Shaders/SPIR-V/Default.vert.spv");
-		ShaderModule fragModule("test/TestPBR/Resource/Shaders/SPIR-V/KullaConty.frag.spv");
+		ShaderModule vertModule("test/PBR/Resource/Shaders/SPIR-V/Default.vert.spv");
+		ShaderModule fragModule("test/PBR/Resource/Shaders/SPIR-V/KullaConty.frag.spv");
 		PipelineConfigurator configurator;
 		configurator.PipelineLayout(pipeline_layout)
 			.RenderPass(renderpass)
