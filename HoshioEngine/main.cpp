@@ -14,6 +14,7 @@
 #include "test/PBR/PBRPrecompute.h"
 #include "test/PBR/PBRRenderGraph.h"
 #include "test/Tessellation/TestTessellation.h"
+#include "test/DiscretizeNurbs/DeBoor.h"
 using namespace HoshioEngine;
 
 int main() {
@@ -21,32 +22,25 @@ int main() {
 		if (!GlfwWindow::InitializeWindow({1840, 1024 }))
 			return -1;
 
-		Fence& fence = VulkanPlus::Plus().CreateFences("test-fence", 1).second[0];
+		Fence fence;
 
 		Semaphore semaphore_image_available;
 		Semaphore semaphore_render_over;
 
-		VulkanPlus::Plus().CreateTexture2D("test", "res/images/icon-1024.png", VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, true);
-		Texture2D& texture = VulkanPlus::Plus().GetTexture2D("test").second[0];
 		Texture2D bg("res/images/kayoko-bg.png", VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_UNORM, true);
 
-		Sampler& sampler_linear = VulkanPlus::Plus().CreateSampler("sampler_linear", Sampler::SamplerCreateInfo()).second[0];
+		Sampler& sampler = VulkanPlus::Plus().CreateSampler("sampler_linear", Sampler::SamplerCreateInfo()).second[0];
 
 		const CommandBuffer& commandBuffer = VulkanPlus::Plus().CommandBuffer_Graphics();
 
-
 		{
-			std::unique_ptr<RenderNode> drawScreenNode =
-				std::make_unique<DrawScreenNode>(sampler_linear, bg);
-			drawScreenNode->Init();
-
-			TestTesselation testtess;
-			testtess.Init();
+			DrawScreenNode drawScreenNode(sampler, bg);
+			drawScreenNode.Init();
 
 			//PBRRenderGraph pbrRenderGraph;
 			//pbrRenderGraph.ExecutePrecompute();
 
-			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<CurvePanel>());
+			EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<DeBoor>());
 
 			while (!glfwWindowShouldClose(GlfwWindow::pWindow)) {
 				while (glfwGetWindowAttrib(GlfwWindow::pWindow, GLFW_ICONIFIED))
@@ -58,7 +52,7 @@ int main() {
 
 				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				testtess.Render();
+				drawScreenNode.Render();
 
 				commandBuffer.End();
 
