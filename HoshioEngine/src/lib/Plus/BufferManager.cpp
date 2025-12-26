@@ -39,7 +39,7 @@ namespace HoshioEngine {
 			.size = size,
 			.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT
 		};
-		bufferMemory.Create(createInfo, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT);
+		bufferMemory.Create(createInfo, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_CACHED_BIT);
 	}
 	void StagingBuffer::Release()
 	{
@@ -235,6 +235,31 @@ namespace HoshioEngine {
 		vkCmdCopyBuffer(commandBuffer, StagingBuffer_MainThread::Main(), bufferMemory.Buffer(), elementCount, regions.get());
 		commandBuffer.End();
 		VulkanPlus::Plus().ExecuteCommandBuffer_Graphics(commandBuffer);
+	}
+
+	void DeviceLocalBuffer::RetrieveData(void* pData_dst, VkDeviceSize size, VkDeviceSize offset, VkPipelineStageFlagBits pipelineStages) const
+	{
+
+		auto& commandBuffer = VulkanPlus::Plus().CommandBuffer_Transfer();
+
+		// 否则需要通过 staging buffer
+		StagingBuffer_MainThread::Expand(size);
+
+		// 拷贝命令
+		commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+		VkBufferCopy region = {
+			.srcOffset = offset,
+			.dstOffset = 0,
+			.size = size
+		};
+		vkCmdCopyBuffer(commandBuffer, bufferMemory.Buffer(), StagingBuffer_MainThread::Main(), 1, &region);
+
+		commandBuffer.End();
+		VulkanPlus::Plus().ExecuteCommandBuffer_Graphics(commandBuffer);
+
+		// 从 staging buffer 取数据到 CPU
+		StagingBuffer_MainThread::RetrieveData(pData_dst, size);
 	}
 
 	void DeviceLocalBuffer::Create(VkDeviceSize size, VkBufferUsageFlags desiredUsages_without_transfer_dst)

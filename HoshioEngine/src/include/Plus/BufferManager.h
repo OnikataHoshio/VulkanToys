@@ -84,6 +84,8 @@ namespace HoshioEngine {
 			TransferData(&data_src, sizeof data_src);
 		};
 
+		void RetrieveData(void* pData_dst, VkDeviceSize size, VkDeviceSize offset = 0, VkPipelineStageFlagBits pipelineStages = VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT) const;
+
 		void Create(VkDeviceSize size, VkBufferUsageFlags desiredUsages_without_transfer_dst);
 
 		void Recreate(VkDeviceSize size, VkBufferUsageFlags desiredUsages_without_transfer_dst);

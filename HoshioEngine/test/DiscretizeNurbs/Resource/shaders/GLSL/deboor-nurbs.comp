@@ -1,0 +1,117 @@
+#version 460
+#pragma shader_stage(compute)
+
+layout(local_size_x = 20, local_size_y = 20) in;
+
+layout(std430, set = 0 ,binding = 0) buffer readonly InputData {
+    vec4 control_points[16];
+    float u_knots[24];
+    float v_knots[24];
+} inputData;
+
+layout(std430, set = 0, binding = 1) buffer writeonly OutputData {
+    vec4 discretize_points[];
+} outputData;
+
+layout(push_constant) uniform Meta {
+    int n; int m; // 控制点最大索引
+    int p; int q; // 阶数
+} meta;
+
+shared vec4 s_control_points[4][4];
+shared float s_u_knots[24]; 
+shared float s_v_knots[24];
+
+// 辅助函数：二分查找区间
+int findSpanShared(float t, int p, int n, int isV) {
+    // n 是控制点数量，最大索引是 n-1
+    // 有效参数范围在 [ knots[p], knots[n+1] ]
+    float max_knot = (isV == 0) ? s_u_knots[n + 1] : s_v_knots[n + 1];
+    
+    // 特殊处理：如果 t 正好等于末尾节点值
+    if (t >= max_knot) return n; 
+
+    int low = p; 
+    int high = n; 
+    int mid = (low + high + 1) / 2;
+
+    while (low < high) {
+        float knot_mid = (isV == 0) ? s_u_knots[mid] : s_v_knots[mid];
+        if (t < knot_mid) {
+            high = mid - 1;
+        } else {
+            low = mid;
+        }
+        mid = (low + high + 1) / 2;
+    }
+    return low;
+}
+
+// 辅助函数：一维 De Boor（从局部数组读取）
+vec4 deBoorShared(float t, int p, int k, in vec4 d[8], int isV) {
+    vec4 temp_d[8];
+    for(int i = 0; i <= p; i++) temp_d[i] = d[i];
+
+    for (int r = 1; r <= p; r++) {
+        for (int j = p; j >= r; j--) {
+            float knot_j = isV == 0 ? s_u_knots[j + k - p] : s_v_knots[j + k - p];
+            float knot_next = isV == 0 ? s_u_knots[j + k + 1 - r] : s_v_knots[j + k + 1 - r];
+            
+            float alpha_num = t - knot_j;
+            float alpha_den = knot_next - knot_j;
+            float alpha = (alpha_den == 0.0) ? 0.0 : alpha_num / alpha_den;
+            temp_d[j] = mix(temp_d[j-1], temp_d[j], alpha);
+        }
+    }
+    return temp_d[p];
+}
+
+void main() {
+    uint lx = gl_LocalInvocationID.x;
+    uint ly = gl_LocalInvocationID.y;
+    uint local_idx = gl_LocalInvocationIndex;
+    
+    // 1. 协作加载数据到 Shared Memory
+    // 每个线程负责加载一个控制点，直到填满 16x16 的共享区域
+    if (lx < meta.n && ly < meta.m) {
+        s_control_points[lx][ly] = inputData.control_points[lx * meta.m + ly];
+    }
+    
+    // 加载节点矢量（假设节点矢量长度不超过 64）
+    if (local_idx < (meta.n + meta.p + 1)) {
+        s_u_knots[local_idx] = inputData.u_knots[local_idx];
+    }
+    if (local_idx < (meta.m + meta.q + 1)) {
+        s_v_knots[local_idx] = inputData.v_knots[local_idx];
+    }
+
+    barrier();
+
+    // 2. 计算当前线程对应的参数 u, v
+    float u = float(lx) / float(gl_WorkGroupSize.x - 1);
+    float v = float(ly) / float(gl_WorkGroupSize.y - 1);
+
+    // 3. 查找区间
+    int k = findSpanShared(u, meta.p, meta.n, 0);
+    int l = findSpanShared(v, meta.q, meta.m, 1);
+
+    // 4. 曲面求值
+    vec4 temp_v_points[8];
+    for (int j = 0; j <= meta.q; j++) {
+        vec4 row_points[8];
+        for (int i = 0; i <= meta.p; i++) {
+            // 从共享内存读取控制点
+            row_points[i] = s_control_points[k - meta.p + i][l - meta.q + j];
+        }
+        temp_v_points[j] = deBoorShared(u, meta.p, k, row_points, 0);
+    }
+
+    vec4 final_pos = deBoorShared(v, meta.q, l, temp_v_points, 1);
+
+    final_pos = final_pos / final_pos.w;
+
+    // 5. 写回全局内存
+    uint grid_width = gl_NumWorkGroups.x * gl_WorkGroupSize.x;
+    uint global_index = gl_GlobalInvocationID.y * grid_width + gl_GlobalInvocationID.x;
+    outputData.discretize_points[global_index] = final_pos;
+}

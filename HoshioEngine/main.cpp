@@ -15,8 +15,11 @@
 #include "test/PBR/PBRRenderGraph.h"
 #include "test/Tessellation/TestTessellation.h"
 #include "test/DiscretizeNurbs/DeBoor.h"
+#include "test/DiscretizeNurbs/DeBoorNrubs.h"
 using namespace HoshioEngine;
 
+double TestPerformance(DeBoorNurbs& deboorNurbs, const CommandBuffer& commandBuffer);
+double TestRetrieveData(DeBoorNurbs& deboorNurbs, const CommandBuffer& commandBuffer);
 int main() {
 	{
 		if (!GlfwWindow::InitializeWindow({1840, 1024 }))
@@ -40,34 +43,42 @@ int main() {
 			//PBRRenderGraph pbrRenderGraph;
 			//pbrRenderGraph.ExecutePrecompute();
 
-			EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<DeBoor>());
+			DeBoorNurbs deboorNurbs;
+			deboorNurbs.Init();
 
-			while (!glfwWindowShouldClose(GlfwWindow::pWindow)) {
-				while (glfwGetWindowAttrib(GlfwWindow::pWindow, GLFW_ICONIFIED))
-					glfwWaitEvents();
+			double compute_cost = TestPerformance(deboorNurbs, commandBuffer);
+			double transfer_cost = TestRetrieveData(deboorNurbs, commandBuffer);
+			std::cout << "total time per iteration: " << (compute_cost + transfer_cost) << " ms" << std::endl;
 
-				VulkanBase::Base().SwapImage(semaphore_image_available);
+			// EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<DeBoor>());
 
-				auto i = VulkanBase::Base().CurrentImageIndex();
+			//while (!glfwWindowShouldClose(GlfwWindow::pWindow)) {
+			//	while (glfwGetWindowAttrib(GlfwWindow::pWindow, GLFW_ICONIFIED))
+			//		glfwWaitEvents();
 
-				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+			//	VulkanBase::Base().SwapImage(semaphore_image_available);
 
-				drawScreenNode.Render();
+			//	auto i = VulkanBase::Base().CurrentImageIndex();
 
-				commandBuffer.End();
+			//	commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				EditorGUIManager::Instance().Render();
+			//	drawScreenNode.Render();
 
-				VkCommandBuffer commandBuffers[] = { commandBuffer, EditorGUIManager::Instance().GCommandBuffer() };
-				VulkanBase::Base().SubmitCommandBuffer_Graphics(commandBuffers, semaphore_image_available, semaphore_render_over, fence);
-				VulkanBase::Base().PresentImage(semaphore_render_over);
+			//	commandBuffer.End();
 
-				glfwPollEvents();
-				GlfwWindow::UpdateWindow();
+			//	EditorGUIManager::Instance().Render();
 
-				fence.Wait();
-				fence.Reset();
-			}
+			//	VkCommandBuffer commandBuffers[] = { commandBuffer, EditorGUIManager::Instance().GCommandBuffer() };
+			//	VulkanBase::Base().SubmitCommandBuffer_Graphics(commandBuffers, semaphore_image_available, semaphore_render_over, fence);
+			//	VulkanBase::Base().PresentImage(semaphore_render_over);
+
+			//	glfwPollEvents();
+			//	GlfwWindow::UpdateWindow();
+
+			//	fence.Wait();
+			//	fence.Reset();
+			//}
+
 
 			VulkanBase::Base().WaitIdle();
 		}
@@ -78,6 +89,47 @@ int main() {
 }
 
 
+double TestPerformance(DeBoorNurbs& deboorNurbs,const CommandBuffer& commandBuffer)
+{
+	Fence fence;
+
+	const int iterations = 1000; // 测试次数
+	auto start = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < iterations; i++) {
+		commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+		deboorNurbs.Render();
+		commandBuffer.End();
+
+		VkCommandBuffer commandBuffers[] = { commandBuffer };
+		VulkanBase::Base().SubmitCommandBuffer_Compute(commandBuffers, fence);
+
+		fence.Wait();
+		fence.Reset();
+	}
+
+	auto end = std::chrono::high_resolution_clock::now();
+	double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
+	std::cout << "ComputeShader average time per iteration: " << (elapsed_ms / iterations) << " ms" << std::endl;
+	return elapsed_ms / iterations;
+
+}
+
+double TestRetrieveData(DeBoorNurbs& deboorNurbs, const CommandBuffer& commandBuffer)
+{
+
+	const int iterations = 1000; // 测试次数
+	auto start = std::chrono::high_resolution_clock::now();
+
+	for (int i = 0; i < iterations; i++) {
+		deboorNurbs.RetrieveData();
+	}
+
+	auto end = std::chrono::high_resolution_clock::now();
+	double elapsed_ms = std::chrono::duration<double, std::milli>(end - start).count();
+	std::cout << "Retridata average time per iteration: " << (elapsed_ms / iterations) << " ms" << std::endl;
+	return elapsed_ms/iterations;
+}
 
 
 
