@@ -2,8 +2,11 @@
 #include "Wins/GlfwManager.h"
 
 namespace HoshioEngine {
-	TestModel::TestModel(const char* file_path) : model(file_path)
+	TestModel::TestModel(const char* file_path)
 	{
+		Texture::FlipVerticallyOnLoad = true;
+		model.LoadModel(file_path);
+		Texture::FlipVerticallyOnLoad = false;
 	}
 
 	void TestModel::UpdateDescriptorSets()

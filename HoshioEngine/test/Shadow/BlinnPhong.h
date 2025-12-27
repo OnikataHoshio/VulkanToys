@@ -9,24 +9,39 @@ namespace HoshioEngine
 {
 	class BlinnPhong : public RenderNode
 	{
-	public:
-
 	private:
-		Model model;
+		Model dashachun;
+		Model floor;
 		Light light[2];
 
-		RenderPass renderPass;
-		Pipeline pipeline;
-		PipelineLayout pipelineLayout;
-		Sampler sampler;
-		DescriptorSet descriptorSet;
-		DescriptorSetLayout descriptorSetLayout;
+		ShaderInfo shader_info;
+		ShaderInfo shader_info_floor;
 
+		struct VertexUniform {
+			glm::mat4 model = {};
+			glm::mat4 view = {};
+			glm::mat4 proj = {};
+		}vertex_uniform;
 
+		struct FragmentUniform {
+			glm::vec4 CameraPos = {};
+			glm::vec4 PointLightPos = {};
+			glm::vec4 I_p = {};
+			glm::vec4 SunLightDir = {};
+			glm::vec3 I_s = {};
+			float Shininess = 0.0f;
+		}fragment_uniform;
 
+		UniformBuffer vertex_uniform_buffer;
+		UniformBuffer fragment_uniform_buffer;
+
+		DescriptorSetLayout uniform_set_layout;
+		DescriptorSet uniform_set;
+
+		const char* file_path = nullptr;
 
 	public:
-		BlinnPhong() = default;
+		BlinnPhong(const char* file_path);
 
 		void ImguiRender() override;
 
@@ -45,6 +60,8 @@ namespace HoshioEngine
 		void RecordCommandBuffer() override;
 		void SendDataToNextNode() override;
 	
+		void CreateFloor(float length = 10.0f, float width = 10.0f);
+
 	};
 }
 

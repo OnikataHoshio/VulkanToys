@@ -5,6 +5,16 @@
 #include "Base/RpwfManager.h"
 
 namespace HoshioEngine {
+
+	struct StbiDeleter {
+		void operator()(uint8_t* ptr) const {
+			if (ptr) {
+				stbi_image_free(ptr); 
+			}
+		}
+	};
+
+
 	class Texture {
 	protected:
 		ImageMemory imageMemory;
@@ -13,8 +23,8 @@ namespace HoshioEngine {
 		void CreateImageMemory(VkImageType imageType, VkFormat format, VkExtent3D extent, uint32_t mipLevelCount, uint32_t arrayLayerCount, VkImageCreateFlags flags = 0);
 		void CreateImageView(VkImageViewType viewType, VkFormat format, uint32_t mipLevelCount, uint32_t arrayLayerCount, VkImageViewCreateFlags flags = 0);
 		//static std::unique_ptr<uint8_t[]> LoadFile_Internal(const auto* address, size_t fileSize, VkExtent2D& extent, VkFormat format);
-		static std::unique_ptr<uint8_t[]> LoadFile_Internal(const char* address, size_t fileSize, VkExtent2D& extent, VkFormat format);
-		static std::unique_ptr<uint8_t[]> LoadFile_Internal(const uint8_t* address, size_t fileSize, VkExtent2D& extent, VkFormat format);
+		static std::unique_ptr<uint8_t[], StbiDeleter> LoadFile_Internal(const char* address, size_t fileSize, VkExtent2D& extent, VkFormat format);
+		static std::unique_ptr<uint8_t[], StbiDeleter> LoadFile_Internal(const uint8_t* address, size_t fileSize, VkExtent2D& extent, VkFormat format);
 	public:
 		VkImageView ImageView() const;
 		VkImage Image() const;
@@ -23,17 +33,20 @@ namespace HoshioEngine {
 
 		VkDescriptorImageInfo DescriptorImageInfo(VkSampler sampler) const;
 
-		[[nodiscard]]
-		static std::unique_ptr<uint8_t[]> LoadFile(const char* filePath, VkExtent2D& extent, VkFormat format);
+		static bool FlipVerticallyOnLoad;
 
 		[[nodiscard]]
-		static std::unique_ptr<uint8_t[]> LoadFile(const uint8_t* fileBinaries, size_t fileSize, VkExtent2D& extent, VkFormat format);
+		static std::unique_ptr<uint8_t[], StbiDeleter> LoadFile(const char* filePath, VkExtent2D& extent, VkFormat format);
+
+		[[nodiscard]]
+		static std::unique_ptr<uint8_t[], StbiDeleter> LoadFile(const uint8_t* fileBinaries, size_t fileSize, VkExtent2D& extent, VkFormat format);
 
 		static void CopyBlitAndGenerateMipmap2D(VkBuffer buffer_copyFrom, VkImage image_copyTo, VkImage image_blitTo, VkExtent2D imageExtent,
 			uint32_t mipLevelCount = 1, uint32_t layerCount = 1, VkFilter minFilter = VK_FILTER_LINEAR);
 
 		static void BlitAndGenerateMipmap2D(VkImage image_preinitialized, VkImage image_final, VkExtent2D imageExtent,
 			uint32_t mipLevelCount = 1, uint32_t layerCount = 1, VkFilter minFilter = VK_FILTER_LINEAR);
+
 	};
 
 	class Texture2D : public Texture {

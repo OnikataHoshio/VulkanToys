@@ -16,6 +16,7 @@
 #include "test/Tessellation/TestTessellation.h"
 #include "test/DiscretizeNurbs/DeBoor.h"
 #include "test/DiscretizeNurbs/DeBoorNrubs.h"
+#include "test/Shadow/BlinnPhong.h"
 using namespace HoshioEngine;
 
 double TestPerformance(DeBoorNurbs& deboorNurbs, const CommandBuffer& commandBuffer);
@@ -40,44 +41,50 @@ int main() {
 			DrawScreenNode drawScreenNode(sampler, bg);
 			drawScreenNode.Init();
 
+			//TestModel testModel("test/Shadow/Resource/models/dashachun.obj");
+			//testModel.Init();
+
+			BlinnPhong blinnPhong("test/Shadow/Resource/models/dashachun.obj");
+			blinnPhong.Init();
+
 			//PBRRenderGraph pbrRenderGraph;
 			//pbrRenderGraph.ExecutePrecompute();
 
-			DeBoorNurbs deboorNurbs;
-			deboorNurbs.Init();
+			//DeBoorNurbs deboorNurbs;
+			//deboorNurbs.Init();
 
-			double compute_cost = TestPerformance(deboorNurbs, commandBuffer);
-			double transfer_cost = TestRetrieveData(deboorNurbs, commandBuffer);
-			std::cout << "total time per iteration: " << (compute_cost + transfer_cost) << " ms" << std::endl;
+			// double compute_cost = TestPerformance(deboorNurbs, commandBuffer);
+			// double transfer_cost = TestRetrieveData(deboorNurbs, commandBuffer);
+			// std::cout << "total time per iteration: " << (compute_cost + transfer_cost) << " ms" << std::endl;
 
-			// EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<DeBoor>());
+			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<DeBoor>());
 
-			//while (!glfwWindowShouldClose(GlfwWindow::pWindow)) {
-			//	while (glfwGetWindowAttrib(GlfwWindow::pWindow, GLFW_ICONIFIED))
-			//		glfwWaitEvents();
+			while (!glfwWindowShouldClose(GlfwWindow::pWindow)) {
+				while (glfwGetWindowAttrib(GlfwWindow::pWindow, GLFW_ICONIFIED))
+					glfwWaitEvents();
 
-			//	VulkanBase::Base().SwapImage(semaphore_image_available);
+				VulkanBase::Base().SwapImage(semaphore_image_available);
 
-			//	auto i = VulkanBase::Base().CurrentImageIndex();
+				auto i = VulkanBase::Base().CurrentImageIndex();
 
-			//	commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-			//	drawScreenNode.Render();
+				blinnPhong.Render();
 
-			//	commandBuffer.End();
+				commandBuffer.End();
 
-			//	EditorGUIManager::Instance().Render();
+				EditorGUIManager::Instance().Render();
 
-			//	VkCommandBuffer commandBuffers[] = { commandBuffer, EditorGUIManager::Instance().GCommandBuffer() };
-			//	VulkanBase::Base().SubmitCommandBuffer_Graphics(commandBuffers, semaphore_image_available, semaphore_render_over, fence);
-			//	VulkanBase::Base().PresentImage(semaphore_render_over);
+				VkCommandBuffer commandBuffers[] = { commandBuffer, EditorGUIManager::Instance().GCommandBuffer() };
+				VulkanBase::Base().SubmitCommandBuffer_Graphics(commandBuffers, semaphore_image_available, semaphore_render_over, fence);
+				VulkanBase::Base().PresentImage(semaphore_render_over);
 
-			//	glfwPollEvents();
-			//	GlfwWindow::UpdateWindow();
+				glfwPollEvents();
+				GlfwWindow::UpdateWindow();
 
-			//	fence.Wait();
-			//	fence.Reset();
-			//}
+				fence.Wait();
+				fence.Reset();
+			}
 
 
 			VulkanBase::Base().WaitIdle();

@@ -4,6 +4,7 @@
 namespace HoshioEngine {
 	Light::Light(const float intensity, const glm::vec3 lightColor) : intensity(intensity), lightColor(lightColor)
 	{
+
 	}
 
 	void Light::SetIntensity(const float intensity)
@@ -19,7 +20,7 @@ namespace HoshioEngine {
 	void Light::SetRotation(const glm::vec3 rotation)
 	{
 		Actor::SetRotation(rotation);
-		const glm::vec4 direction = glm::vec4(0.0, -1.0f, 0.0f, 1.0f) * RotationMatrix();
+		const glm::vec4 direction = RotationMatrix() * glm::vec4(0.0, -1.0f, 0.0f, 1.0f);
 		lightDirection = glm::vec3(direction);
 	}
 

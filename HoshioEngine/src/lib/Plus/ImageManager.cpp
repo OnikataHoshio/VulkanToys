@@ -4,7 +4,11 @@
 
 namespace HoshioEngine {
 
+
+
 #pragma region Texture
+
+	bool Texture::FlipVerticallyOnLoad = false;
 
 	void Texture::CreateImageMemory(VkImageType imageType, VkFormat format, VkExtent3D extent, uint32_t mipLevelCount, uint32_t arrayLayerCount, VkImageCreateFlags flags)
 	{
@@ -74,13 +78,16 @@ namespace HoshioEngine {
 	}
 	*/
 
-	std::unique_ptr<uint8_t[]> Texture::LoadFile_Internal(const char* address, size_t fileSize, VkExtent2D& extent, VkFormat format)
+	std::unique_ptr<uint8_t[], StbiDeleter> Texture::LoadFile_Internal(const char* address, size_t fileSize, VkExtent2D& extent, VkFormat format)
 	{
 #ifndef NDEBUG
 		if (!(vkuFormatIsStoredFloat(format) && vkuFormatIs32bit(format)) &&
 			!(vkuFormatIsStoredInt(format) && (vkuFormatIs8bit(format) || vkuFormatIs16bit(format))))
 			throw std::runtime_error("Required format is not available for source image data!");
 #endif // !NDEBUG
+
+		stbi_set_flip_vertically_on_load(FlipVerticallyOnLoad ? 1 : 0);
+
 		int& width = reinterpret_cast<int&>(extent.width);
 		int& height = reinterpret_cast<int&>(extent.height);
 		int channelCount = 0;
@@ -99,10 +106,10 @@ namespace HoshioEngine {
 		if (!pImageData)
 			throw std::runtime_error(std::format("[ Texture ] ERROR\nFailed to load the file: {}\n", address));
 
-		return std::unique_ptr<uint8_t[]>(static_cast<uint8_t*>(pImageData));
+		return std::unique_ptr<uint8_t[], StbiDeleter>(static_cast<uint8_t*>(pImageData));
 	}
 
-	std::unique_ptr<uint8_t[]> Texture::LoadFile_Internal(const uint8_t* address, size_t fileSize, VkExtent2D& extent, VkFormat format)
+	std::unique_ptr<uint8_t[], StbiDeleter> Texture::LoadFile_Internal(const uint8_t* address, size_t fileSize, VkExtent2D& extent, VkFormat format)
 	{
 #ifndef NDEBUG
 		if (!(vkuFormatIsStoredFloat(format) && vkuFormatIs32bit(format)) &&
@@ -128,7 +135,7 @@ namespace HoshioEngine {
 		if (!pImageData)
 			throw std::runtime_error(std::format("[ Texture ] ERROR\nFailed to load image data from the given address!\n"));
 
-		return std::unique_ptr<uint8_t[]>(static_cast<uint8_t*>(pImageData));
+		return std::unique_ptr<uint8_t[], StbiDeleter>(static_cast<uint8_t*>(pImageData));
 	}
 
 	VkImageView Texture::ImageView() const
@@ -160,12 +167,12 @@ namespace HoshioEngine {
 		};
 	}
 
-	std::unique_ptr<uint8_t[]> Texture::LoadFile(const char* filePath, VkExtent2D& extent, VkFormat format)
+	std::unique_ptr<uint8_t[], StbiDeleter> Texture::LoadFile(const char* filePath, VkExtent2D& extent, VkFormat format)
 	{
 		return LoadFile_Internal(filePath, 0, extent, format);
 	}
 
-	std::unique_ptr<uint8_t[]> Texture::LoadFile(const uint8_t* fileBinaries, size_t fileSize, VkExtent2D& extent, VkFormat format)
+	std::unique_ptr<uint8_t[], StbiDeleter> Texture::LoadFile(const uint8_t* fileBinaries, size_t fileSize, VkExtent2D& extent, VkFormat format)
 	{
 		return LoadFile_Internal(fileBinaries, fileSize, extent, format);
 	}
@@ -341,7 +348,7 @@ namespace HoshioEngine {
 	void Texture2D::Create(const char* filePath, VkFormat initial_format, VkFormat final_format, bool generateMip)
 	{
 		VkExtent2D extent;
-		std::unique_ptr<uint8_t[]> pImageData = LoadFile(filePath, extent, initial_format);
+		std::unique_ptr<uint8_t[], StbiDeleter> pImageData = LoadFile(filePath, extent, initial_format);
 		if (pImageData)
 			Create(pImageData.get(), extent, initial_format, final_format, generateMip);
 	}
@@ -351,6 +358,7 @@ namespace HoshioEngine {
 		this->extent = extent;
 		size_t imageDataSize = VkDeviceSize(vkuFormatElementSize(initial_format)) * extent.width * extent.height;
 		StagingBuffer_MainThread::SynchronizeData(pImageData, imageDataSize);
+		
 		Create_Internal(initial_format, final_format, generateMip);
 	}
 
@@ -423,7 +431,7 @@ namespace HoshioEngine {
 			throw std::runtime_error("[ TextureArray ] ERROR::Layer count is out of limit!");
 		}
 		VkExtent2D fullExtent;
-		std::unique_ptr<uint8_t[]> pImageData = LoadFile(filepath, fullExtent, format_initial);
+		std::unique_ptr<uint8_t[], StbiDeleter> pImageData = LoadFile(filepath, fullExtent, format_initial);
 		if (pImageData) {
 			if (fullExtent.width % extentInTiles.width ||
 				fullExtent.height % extentInTiles.height) {
@@ -486,7 +494,7 @@ namespace HoshioEngine {
 				VulkanBase::Base().PhysicalDeviceProperties().limits.maxImageArrayLayers);
 			throw std::runtime_error("[ TextureArray ] ERROR::Layer count is out of limit!");
 		}
-		std::unique_ptr psImageData = std::make_unique<std::unique_ptr<uint8_t[]>[]>(filepaths.size());
+		std::unique_ptr psImageData = std::make_unique<std::unique_ptr<uint8_t[], StbiDeleter>[]>(filepaths.size());
 		for (size_t i = 0; i < filepaths.size(); i++) {
 			VkExtent2D extent_currentLayer;
 			psImageData[i] = LoadFile(filepaths[i], extent_currentLayer, format_initial);
@@ -610,7 +618,7 @@ namespace HoshioEngine {
 	void TextureCube::Create(const char* filepath, const glm::uvec2 facePositions[6], VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
 	{
 		VkExtent2D fullExtent;
-		std::unique_ptr<uint8_t[]> pImageData = LoadFile(filepath, fullExtent, format_initial);
+		std::unique_ptr<uint8_t[], StbiDeleter> pImageData = LoadFile(filepath, fullExtent, format_initial);
 		if (pImageData) {
 			if (VkExtent2D extentInTiles = GetExtentInTiles(facePositions, lookFromOutside);
 				fullExtent.width % extentInTiles.width ||
@@ -691,7 +699,7 @@ namespace HoshioEngine {
 
 	void TextureCube::Create(const char* const* filepaths, VkFormat format_initial, VkFormat format_final, bool lookFromOutside, bool generateMipmap)
 	{
-		std::unique_ptr<uint8_t[]> psImageData[6] = {};
+		std::unique_ptr<uint8_t[], StbiDeleter> psImageData[6] = {};
 		for (size_t i = 0; i < 6; i++) {
 			VkExtent2D extent_currentLayer;
 			psImageData[i] = LoadFile(filepaths[i], extent_currentLayer, format_initial);

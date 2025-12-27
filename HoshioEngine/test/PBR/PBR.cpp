@@ -92,8 +92,6 @@ void PBR::CreateDescriptorSetLayout()
 		};
 		sampler_set_layout.Create(createInfo);
 		VulkanPlus::Plus().DescriptorPool().AllocateDescriptorSets(sampler_set, sampler_set_layout);
-
-
 	}
 
 	{

@@ -3,11 +3,8 @@
 
 layout(location = 0) in vec3 i_Position;
 layout(location = 1) in vec3 i_Normal;
-layout(location = 2) in vec2 i_Texcoord;
 
 layout(location = 0) out vec4 o_Color;
-
-layout(set = 0, binding = 0) uniform sampler2D u_Texture;
 
 layout(set = 1, binding = 1) uniform u_Attributes
 {
@@ -25,12 +22,13 @@ layout(set = 1, binding = 1) uniform u_Attributes
 
 vec3 CalIlluminate(vec3 texColor, vec3 L, vec3 N, vec3 H, vec3 I, float attenuation);
 
+vec3 CalFloorColor();
 
 void main(){
     vec3 N = normalize(i_Normal);
     vec3 V = normalize(uAttributes.CameraPos - i_Position);
 
-    vec3 texColor = texture(u_Texture, i_Texcoord).rgb;
+    vec3 texColor = CalFloorColor();
 
     vec3 color = 0.05 * texColor;
 
@@ -67,4 +65,16 @@ vec3 CalIlluminate(vec3 texColor, vec3 L, vec3 N, vec3 H, vec3 I, float attenuat
     color += vec3(0.3) * attenuation * I * pow(NdotH, Shininess);
 
     return color;
+}
+
+vec3 CalFloorColor(){
+    int x = int(floor(i_Position.x));
+    int y = int(floor(i_Position.z));
+
+    bool isOdd = ((x + y) % 2 != 0);
+
+    if(isOdd)
+        return vec3(0.4f);
+    else
+        return vec3(1.0f);
 }

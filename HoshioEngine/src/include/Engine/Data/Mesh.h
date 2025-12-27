@@ -21,7 +21,6 @@ namespace HoshioEngine {
 	struct ShaderInfo {
 		int pipeline_id = M_INVALID_ID;
 		int pipeline_layout_id = M_INVALID_ID;
-		int renderpass_id = M_INVALID_ID;
 		int sampler_id = M_INVALID_ID;
 		int sampler_set_layout_id = M_INVALID_ID;
 		int uniform_set_layout_id = M_INVALID_ID;
