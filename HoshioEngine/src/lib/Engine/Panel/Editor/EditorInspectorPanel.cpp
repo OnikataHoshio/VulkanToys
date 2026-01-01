@@ -8,7 +8,7 @@ namespace HoshioEngine {
 
 	void EditorInspectorPanel::Render()
 	{
-		ImGui::Begin("Inspector");
+		ImGui::Begin("Settings");
 		if (startNode) {
 			startNode->ImguiRender();
 			auto next = startNode->NextNode();

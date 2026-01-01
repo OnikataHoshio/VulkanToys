@@ -51,7 +51,6 @@ namespace HoshioEngine {
 
 		SimplePathTrace(VkSampler sampler, Texture2D* texture);
 
-
 	};
 
 

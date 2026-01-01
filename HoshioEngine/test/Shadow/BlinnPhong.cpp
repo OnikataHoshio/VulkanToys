@@ -9,7 +9,6 @@ namespace HoshioEngine
 
 	}
 
-
 	void BlinnPhong::InitResource()
 	{
 		Texture::FlipVerticallyOnLoad = true;
@@ -22,20 +21,24 @@ namespace HoshioEngine
 		light[0].SetPosition(glm::vec3(0.5f, 1.0f, -1.0f));
 		light[1].SetRotation(glm::vec3(60.0f, 0.0f, 0.0f));
 	}
+
 	void BlinnPhong::CreateSampler()
 	{
 		shader_info.sampler_id = VulkanPlus::Plus().CreateSampler("trilinear-sampler", Sampler::SamplerCreateInfo()).first;
 		shader_info_floor.sampler_id = shader_info.sampler_id;
 	}
+
 	void BlinnPhong::CreateBuffer()
 	{
 		vertex_uniform_buffer.Create(sizeof vertex_uniform);
 		fragment_uniform_buffer.Create(sizeof fragment_uniform);
 	}
+
 	void BlinnPhong::CreateRenderPass()
 	{
 
 	}
+
 	void BlinnPhong::CreateDescriptorSetLayout()
 	{
 		{
@@ -78,6 +81,7 @@ namespace HoshioEngine
 			VulkanPlus::Plus().DescriptorPool().AllocateDescriptorSets(uniform_set, uniform_set_layout);
 		}
 	}
+
 	void BlinnPhong::CreatePipelineLayout()
 	{
 		DescriptorSetLayout& sampler_set_layout = VulkanPlus::Plus().GetDescriptorSetLayout(shader_info.sampler_set_layout_id).second[0];
@@ -92,6 +96,7 @@ namespace HoshioEngine
 		shader_info_floor.pipeline_layout_id = shader_info.pipeline_layout_id;
 
 	}
+
 	void BlinnPhong::CreatePipeline()
 	{
 		auto Create = [&] {
@@ -172,14 +177,17 @@ namespace HoshioEngine
 
 		Create();
 	}
+
 	void BlinnPhong::CreateFramebuffers()
 	{
 	}
+
 	void BlinnPhong::OtherOperations()
 	{
 		dashachun.SetupModel(shader_info);
 		floor.SetupModel(shader_info_floor);
 	}
+
 	void BlinnPhong::UpdateDescriptorSets()
 	{
 		vertex_uniform.model = glm::mat4(1.0f);
@@ -213,6 +221,7 @@ namespace HoshioEngine
 
 		uniform_set.Write(bufferInfo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
 	}
+
 	void BlinnPhong::RecordCommandBuffer()
 	{
 		uint32_t current_image_ind = VulkanBase::Base().CurrentImageIndex();

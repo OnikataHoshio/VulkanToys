@@ -17,14 +17,17 @@
 #include "test/DiscretizeNurbs/DeBoor.h"
 #include "test/DiscretizeNurbs/DeBoorNrubs.h"
 #include "test/Shadow/BlinnPhong.h"
+#include "test/Stippling/Stippling.h"
 using namespace HoshioEngine;
 
 double TestPerformance(DeBoorNurbs& deboorNurbs, const CommandBuffer& commandBuffer);
 double TestRetrieveData(DeBoorNurbs& deboorNurbs, const CommandBuffer& commandBuffer);
 int main() {
 	{
-		if (!GlfwWindow::InitializeWindow({1840, 1024 }))
+		if (!GlfwWindow::InitializeWindow({ 2480,1024 }))
 			return -1;
+		//if (!GlfwWindow::InitializeWindow({1024,1024 }))
+		//	return -1;
 
 		Fence fence;
 
@@ -44,20 +47,17 @@ int main() {
 			//TestModel testModel("test/Shadow/Resource/models/dashachun.obj");
 			//testModel.Init();
 
-			BlinnPhong blinnPhong("test/Shadow/Resource/models/dashachun.obj");
-			blinnPhong.Init();
-
+			Stippling StipplingNode;
+			StipplingNode.Init();
+			
 			//PBRRenderGraph pbrRenderGraph;
 			//pbrRenderGraph.ExecutePrecompute();
-
-			//DeBoorNurbs deboorNurbs;
-			//deboorNurbs.Init();
 
 			// double compute_cost = TestPerformance(deboorNurbs, commandBuffer);
 			// double transfer_cost = TestRetrieveData(deboorNurbs, commandBuffer);
 			// std::cout << "total time per iteration: " << (compute_cost + transfer_cost) << " ms" << std::endl;
 
-			//EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<DeBoor>());
+			EditorGUIManager::Instance().editorPanels.push_back(std::make_unique<EditorInspectorPanel>(&StipplingNode));
 
 			while (!glfwWindowShouldClose(GlfwWindow::pWindow)) {
 				while (glfwGetWindowAttrib(GlfwWindow::pWindow, GLFW_ICONIFIED))
@@ -69,7 +69,7 @@ int main() {
 
 				commandBuffer.Begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
-				blinnPhong.Render();
+				StipplingNode.Render();
 
 				commandBuffer.End();
 
